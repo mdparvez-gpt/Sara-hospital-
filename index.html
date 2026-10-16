@@ -15,11 +15,50 @@
     <h2 style="text-align: center; color: #38bdf8; margin-top: 0;">Sara Hospital</h2>
     <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-top: -10px;">Internal Intercom System</p>
 
-    <!-- My Profile Setup -->
+    <!-- My Profile Setup (Image removed) -->
     <div class="profile-card" id="profile-area">
         <h4>আপনার প্রোফাইল সেটআপ</h4>
         <input type="text" id="my-name" placeholder="নাম বা ডিপার্টমেন্ট (যেমন: Reception)">
         <input type="text" id="my-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 100)">
-        <input type="file" id="my-photo" accept="image/*">
         <button onclick="saveProfile()">সেভ করুন</button>
+    </div>
+
+    <!-- Screen Display -->
+    <div class="screen" id="screen-display">রেডি / নম্বর ডায়াল করুন</div>
+
+    <!-- Keypad -->
+    <div class="keypad">
+        <button class="btn" onclick="pressKey('1')">1</button>
+        <button class="btn" onclick="pressKey('2')">2</button>
+        <button class="btn" onclick="pressKey('3')">3</button>
+        <button class="btn" onclick="pressKey('4')">4</button>
+        <button class="btn" onclick="pressKey('5')">5</button>
+        <button class="btn" onclick="pressKey('6')">6</button>
+        <button class="btn" onclick="pressKey('7')">7</button>
+        <button class="btn" onclick="pressKey('8')">8</button>
+        <button class="btn" onclick="pressKey('9')">9</button>
+        <button class="btn" onclick="pressKey('*')">*</button>
+        <button class="btn" onclick="pressKey('0')">0</button>
+        <button class="btn" onclick="pressKey('#')">#</button>
+        <button class="btn call-btn" id="call-btn" onclick="makeCall()">কল করুন ☎</button>
+        <button class="btn hangup-btn" id="hangup-btn" onclick="hangUp()">কল কাটুন ✖</button>
+    </div>
+
+    <!-- Custom Contact Add Section -->
+    <div class="add-contact-box">
+        <h4>নতুন কন্টাক্ট যোগ করুন (ICU, Pharmacy ইত্যাদি)</h4>
+        <input type="text" id="c-name" placeholder="নাম (যেমন: ICU Desk)">
+        <input type="text" id="c-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 101)">
+        <button onclick="addContact()">তালিকায় যুক্ত করুন</button>
+    </div>
+
+    <!-- Directory List -->
+    <h4>Sara Hospital ফোনবুক</h4>
+    <div class="contact-list" id="contact-list"></div>
+</div>
+
+<audio id="remote-audio" autoplay></audio>
+<script src="app.js"></script>
+</body>
+</html>
 
