@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sara Hospital - Internal Intercom</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- PeerJS for WebRTC Calling -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+<div class="phone-container">
+    <!-- Hospital Header -->
+    <h2 style="text-align: center; color: #38bdf8; margin-top: 0;">Sara Hospital</h2>
+    <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-top: -10px;">Internal Intercom System</p>
+
+    <!-- My Profile Setup -->
+    <div class="profile-card" id="profile-area">
+        <h4>আপনার প্রোফাইল সেটআপ</h4>
+        <input type="text" id="my-name" placeholder="নাম বা ডিপার্টমেন্ট (যেমন: Reception)">
+        <input type="text" id="my-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 100)">
+        <input type="file" id="my-photo" accept="image/*">
+        <button onclick="saveProfile()">সেভ করুন</button>
+
