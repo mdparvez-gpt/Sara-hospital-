@@ -6,11 +6,11 @@ window.onload = function() {
     const profile = JSON.parse(localStorage.getItem("sara_hosp_profile"));
     if(profile) {
         document.getElementById("profile-area").innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${profile.photo || 'https://via.placeholder.com/50'}" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <img src="${profile.photo || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #38bdf8;">
                 <div>
-                    <h4 style="margin:0;">${profile.name}</h4>
-                    <small>Ext: <strong>${profile.ext}</strong></small>
+                    <h4 style="margin:0; font-size:16px; color:#fff;">${profile.name}</h4>
+                    <small style="color:#38bdf8; font-size:14px;">Ext: <strong>${profile.ext}</strong></small>
                 </div>
             </div>
         `;
@@ -20,8 +20,8 @@ window.onload = function() {
 };
 
 function saveProfile() {
-    const name = document.getElementById("my-name").value;
-    const ext = document.getElementById("my-ext").value;
+    const name = document.getElementById("my-name").value.trim();
+    const ext = document.getElementById("my-ext").value.trim();
     const photoInput = document.getElementById("my-photo").files[0];
 
     if(!name || !ext) return alert("নাম এবং এক্সটেনশন নম্বর দিন");
@@ -29,9 +29,20 @@ function saveProfile() {
     if (photoInput) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const profile = { name, ext, photo: e.target.result };
-            localStorage.setItem("sara_hosp_profile", JSON.stringify(profile));
-            location.reload();
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 100;
+                canvas.height = 100;
+                ctx.drawImage(img, 0, 0, 100, 100);
+                
+                const resizedPhoto = canvas.toDataURL('image/jpeg', 0.7);
+                const profile = { name, ext, photo: resizedPhoto };
+                localStorage.setItem("sara_hosp_profile", JSON.stringify(profile));
+                location.reload();
+            };
         };
         reader.readAsDataURL(photoInput);
     } else {
@@ -54,7 +65,7 @@ function initPeer(ext) {
                 call.answer(stream);
                 currentCall = call;
                 setupCallStream(call);
-            });
+            }).catch(() => alert("মাইক্রোফোন পারমিশন প্রয়োজন"));
         }
     });
 }
@@ -105,8 +116,8 @@ function resetCallUI() {
 }
 
 function addContact() {
-    const name = document.getElementById("c-name").value;
-    const ext = document.getElementById("c-ext").value;
+    const name = document.getElementById("c-name").value.trim();
+    const ext = document.getElementById("c-ext").value.trim();
     if(!name || !ext) return alert("কন্টাক্টের নাম এবং এক্সটেনশন দিন");
 
     let contacts = JSON.parse(localStorage.getItem("sara_hosp_contacts")) || [
@@ -151,4 +162,5 @@ function renderContacts() {
         `;
     });
 }
+
 
