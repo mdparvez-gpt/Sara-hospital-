@@ -1,11 +1,8 @@
-// Firebase configuration for realtime active users sync
-const firebaseConfig = {
-    databaseURL: "https://sara-hospital-intercom-default-rtdb.firebaseio.com/"
-};
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.database();
+const SUPABASE_URL = "https://msggjgygnzwobxtcnepr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_cY5siaFgI1e0w7ZdrFJ2yQ_EGRE3QjP";
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let peer = null;
 let currentCall = null;
@@ -25,7 +22,7 @@ window.onload = function() {
         document.getElementById("app-container").style.display = "block";
         document.getElementById("user-info-display").innerText = `${myName} (Ext: ${myExt})`;
         initPeer();
-        setupPresence();
+        setupSupabasePresence();
     } else {
         document.getElementById("reg-modal").style.display = "flex";
     }
@@ -36,7 +33,7 @@ function registerUser() {
     const ext = document.getElementById("reg-ext").value.trim();
 
     if(!name || !ext) {
-        alert("দয়া করে নাম এবং এক্সটেনশন নম্বর উভয়ই দিন!");
+        alert("নাম এবং এক্সটেনশন দিন!");
         return;
     }
 
@@ -45,38 +42,46 @@ function registerUser() {
     location.reload();
 }
 
-function logoutUser() {
+async function logoutUser() {
     if(myExt) {
-        db.ref('active_users/' + myExt).remove();
+        await sb.from('active_users').delete().eq('ext', myExt);
     }
     localStorage.removeItem("sara_hosp_user");
     if(peer) peer.destroy();
     location.reload();
 }
 
-function setupPresence() {
-    const userRef = db.ref('active_users/' + myExt);
-    userRef.set({ name: myName, ext: myExt, time: Date.now() });
-    userRef.onDisconnect().remove();
+async function setupSupabasePresence() {
+    await sb.from('active_users').upsert({ ext: myExt, name: myName });
+    fetchActiveUsers();
 
-    // Listen to all active users in realtime
-    db.ref('active_users').on('value', (snapshot) => {
-        const users = snapshot.val();
-        const listDiv = document.getElementById("active-users-list");
-        listDiv.innerHTML = "";
-        
-        if(users) {
-            Object.values(users).forEach(u => {
-                if(u.ext !== myExt) {
-                    listDiv.innerHTML += `
-                        <div class="user-chip" onclick="quickCall('${u.ext}')">
-                            🟢 <strong>${u.name}</strong> (${u.ext})
-                        </div>
-                    `;
-                }
-            });
-        }
-    });
+    sb.channel('public:active_users')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_users' }, () => {
+          fetchActiveUsers();
+      })
+      .subscribe();
+}
+
+async function fetchActiveUsers() {
+    const { data, error } = await sb.from('active_users').select('*');
+    if(error) return;
+
+    const listDiv = document.getElementById("active-users-list");
+    listDiv.innerHTML = "";
+    
+    if(data && data.length > 0) {
+        data.forEach(u => {
+            if(u.ext !== myExt) {
+                listDiv.innerHTML += `
+                    <div class="user-chip" onclick="quickCall('${u.ext}')">
+                        🟢 ${u.name} (${u.ext})
+                    </div>
+                `;
+            }
+        });
+    } else {
+        listDiv.innerHTML = `<span style="color:#64748b; font-size:13px;">অন্য কেউ অনলাইন নেই</span>`;
+    }
 }
 
 function quickCall(ext) {
@@ -93,7 +98,7 @@ function initPeer() {
 
     peer.on('call', (call) => {
         incomingCallObj = call;
-        document.getElementById("caller-info").innerText = `ইনকামিং কল আসছে...`;
+        document.getElementById("caller-info").innerText = `এক্সটেনশন ${call.peer.replace('sara-hosp-', '')} থেকে কল আসছে...`;
         document.getElementById("incoming-modal").style.display = "flex";
         if (navigator.vibrate) navigator.vibrate([400, 400, 400]);
     });
@@ -112,7 +117,7 @@ function pressKey(num) {
 }
 
 function makeCall() {
-    if(!dialBuffer) return alert("প্রথমে এক্সটেনশন নম্বর ডায়াল করুন!");
+    if(!dialBuffer) return alert("নম্বর ডায়াল করুন!");
     if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
 
     const targetId = "sara-hosp-" + dialBuffer;
