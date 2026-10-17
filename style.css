@@ -10,6 +10,7 @@ body {
     padding: 10px;
     box-sizing: border-box;
 }
+
 .landline-phone {
     width: 100%;
     max-width: 390px;
@@ -19,6 +20,7 @@ body {
     border-radius: 24px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.7);
 }
+
 .lcd-screen {
     background: #040812;
     border: 2px solid #1e293b;
@@ -27,6 +29,7 @@ body {
     margin-bottom: 12px;
     box-shadow: inset 0 3px 6px rgba(0,0,0,0.8);
 }
+
 .lcd-header {
     display: flex;
     justify-content: space-between;
@@ -35,7 +38,12 @@ body {
     margin-bottom: 6px;
     font-weight: 600;
 }
-.live-indicator { color: #22c55e; animation: blink 1.5s infinite; }
+
+.live-indicator {
+    color: #22c55e;
+    animation: blink 1.5s infinite;
+}
+
 @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
 .lcd-display-text {
@@ -45,101 +53,13 @@ body {
     font-weight: bold;
     letter-spacing: 2px;
     text-align: right;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 .directory-panel {
     background: #0f172a;
     border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 12px;
-    border: 1px solid #1e293b;
-}
-.directory-title {
-    font-size: 11px;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-    font-weight: bold;
-}
-.users-scroll {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    min-height: 32px;
-    align-items: center;
-}
-.user-chip {
-    background: #1e293b;
-    color: #cbd5e1;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: nowrap;
-    cursor: pointer;
-    border: 1px solid #334155;
-    transition: 0.2s;
-}
-.user-chip:hover { background: #38bdf8; color: #0b0f19; }
-.user-chip.online { border-color: #22c55e; }
-.no-user { font-size: 12px; color: #64748b; font-style: italic; }
-
-.keypad-panel {
-    background: #111827;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid #1f2937;
-}
-.keypad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 8px;
-}
-.k-btn {
-    background: #1f2937;
-    color: #f3f4f6;
-    border: none;
-    padding: 14px;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #111827;
-    transition: 0.1s;
-}
-.k-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #111827; }
-.action-row { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
-.backspace-btn { background: #7f1d1d !important; box-shadow: 0 4px 0 #450a0a !important; font-size: 14px !important; }
-.call-action-btn { background: #16a34a !important; box-shadow: 0 4px 0 #14532d !important; }
-.phone-footer { text-align: center; margin-top: 10px; }
-.logout-link { background: none; border: none; color: #f87171; font-size: 12px; cursor: pointer; text-decoration: underline; }
-
-.incoming-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(2, 6, 23, 0.95);
-    display: flex; justify-content: center; align-items: center; z-index: 999;
-}
-.incoming-card {
-    background: #1e293b; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px;
-    text-align: center; border: 2px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-}
-.ringing-pulse { font-size: 45px; animation: bounce 0.8s infinite alternate; }
-@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-.caller-name-display { font-size: 18px; color: #38bdf8; margin: 15px 0 20px 0; font-weight: bold; }
-.incoming-buttons { display: flex; gap: 10px; }
-.ans-call-btn { background: #22c55e; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; flex: 1; cursor: pointer; }
-.rej-call-btn { background: #ef4444; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; flex: 1; cursor: pointer; }
-.running-icon { font-size: 45px; background: rgba(56,189,248,0.1); width: 75px; height: 75px; line-height: 75px; border-radius: 50%; margin: 0 auto; border: 2px solid #38bdf8; }
-.target-talking { font-size: 16px; color: #cbd5e1; margin: 10px 0 5px 0; }
-.timer-text { font-size: 22px; color: #38bdf8; font-weight: bold; margin-bottom: 20px; font-family: monospace; }
-.running-controls { display: flex; flex-direction: column; gap: 10px; }
-.ctrl-btn { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.end-call-btn { background: #ef4444; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; }
-.modal-box input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; box-sizing: border-box; }
-.landline-save-btn { width: 100%; padding: 12px; background: #38bdf8; color: #0b0f19; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-.brand-title { font-size: 18px; font-weight: bold; color: #38bdf8; letter-spacing: 2px; }
-.brand-sub { font-size: 10px; color: #64748b; letter-spacing: 1px; margin-bottom: 15px; }
+    padding: 10
 
