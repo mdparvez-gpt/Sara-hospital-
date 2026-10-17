@@ -59,19 +59,40 @@ async function registerUser() {
         const ext = extInput.value.trim();
 
         if(!name || !ext) {
-            alert("দয়া করে নাম এবং এক্সটেনশন নম্বর উভয়ই দিন!");
+            alert("Doya kore name ebong extension number ubhoy-i din!");
             return;
+        }
+
+        if(sb) {
+            // Check if extension already exists
+            const { data: existing, error: checkError } = await sb
+                .from('hospital_directory')
+                .select('*')
+                .eq('ext', ext);
+
+            if(existing && existing.length > 0) {
+                alert("Ei extension number-ti already onno karo nam-e registered ache! Onno extension number din.");
+                return;
+            }
+
+            // Insert new user into database
+            const { error: insertError } = await sb.from('hospital_directory').insert({
+                ext: ext,
+                name: name,
+                last_seen: new Date().toISOString()
+            });
+
+            if(insertError) {
+                alert("Registration korte somossa hoyeche: " + insertError.message);
+                return;
+            }
         }
 
         const user = { name, ext };
         localStorage.setItem("sara_hosp_user", JSON.stringify(user));
-        
-        if(sb) {
-            await sb.from('hospital_directory').upsert({ ext, name, last_seen: new Date().toISOString() });
-        }
         location.reload();
     } catch(e) {
-        alert("রেজিস্ট্রেশন করতে সমস্যা হয়েছে!");
+        alert("Registration korte somossa hoyeche!");
     }
 }
 
@@ -89,10 +110,9 @@ async function logoutUser() {
 async function setupSupabaseSync() {
     if(!sb) return;
     try {
-        await sb.from('hospital_directory').upsert({ ext: myExt, name: myName, last_seen: new Date().toISOString() });
+        await sb.from('hospital_directory').update({ last_seen: new Date().toISOString() }).eq('ext', myExt);
         await loadDirectoryAndUnread();
 
-        // Realtime Listener for Directory, Messages
         sb.channel('sara_hosp_realtime_sync')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'hospital_directory' }, async () => {
               await loadDirectoryAndUnread();
@@ -122,7 +142,10 @@ async function loadDirectoryAndUnread() {
         if(dirData) {
             dirData.forEach(u => {
                 globalDirectory[u.ext] = u.name;
-                if(u.last_seen) onlineExtensions.push(u.ext);
+                // Consider active if last_seen is within the last 5 minutes or valid
+                if(u.last_seen) {
+                    onlineExtensions.push(u.ext);
+                }
             });
         }
 
@@ -138,7 +161,7 @@ async function loadDirectoryAndUnread() {
                     const isOnline = onlineExtensions.includes(item.ext);
                     const statusDot = isOnline ? "🟢" : "⚪";
                     const unread = unreadMessagesCounts[item.ext] ? `<span class="unread-badge">${unreadMessagesCounts[item.ext]}</span>` : "";
-                    const missed = missedCallsList[item.ext] ? `<span class="missed-call-tag">⚠️ মিসড কল</span>` : "";
+                    const missed = missedCallsList[item.ext] ? `<span class="missed-call-tag">⚠️ Missed Call</span>` : "";
 
                     listDiv.innerHTML += `
                         <div class="user-chip" onclick="openChat('${item.ext}', '${item.name}')">
@@ -148,10 +171,10 @@ async function loadDirectoryAndUnread() {
                 }
             });
             if(count === 0) {
-                listDiv.innerHTML = `<span class="no-user">অন্য কোনো ইউজার নেই...</span>`;
+                listDiv.innerHTML = `<span class="no-user">Okkhato ba onno keu nei...</span>`;
             }
         } else {
-            listDiv.innerHTML = `<span class="no-user">ফোনবুক খালি আছে</span>`;
+            listDiv.innerHTML = `<span class="no-user">Phonebook khali ache</span>`;
         }
     } catch(e) {}
 }
@@ -162,9 +185,8 @@ async function openChat(ext, name) {
     document.getElementById("chat-target-name").innerText = `${name} (Ext: ${ext})`;
     document.getElementById("chat-modal").style.display = "flex";
     
-    // Load historical messages between me and this user
     const msgArea = document.getElementById("chat-messages");
-    msgArea.innerHTML = `<div class="chat-msg">চ্যাট লোড হচ্ছে...</div>`;
+    msgArea.innerHTML = `<div class="chat-msg">Chat load hocche...</div>`;
 
     if(sb) {
         const { data } = await sb.from('chat_messages')
@@ -179,7 +201,7 @@ async function openChat(ext, name) {
                 appendChatMessage(m.sender_ext, m.message, isMy);
             });
         } else {
-            msgArea.innerHTML = `<div class="chat-msg">কথোপকথন শুরু করুন...</div>`;
+            msgArea.innerHTML = `<div class="chat-msg">Kothopokothon shuru korun...</div>`;
         }
     }
     await loadDirectoryAndUnread();
@@ -224,7 +246,7 @@ async function handleFileUpload(event) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         const fileData = e.target.result;
-        const fileTag = file.type.startsWith('image/') ? `<img src="${fileData}" style="max-width:150px; border-radius:6px;"><br>${file.name}` : `📎 ফাইল: ${file.name}`;
+        const fileTag = file.type.startsWith('image/') ? `<img src="${fileData}" style="max-width:150px; border-radius:6px;"><br>${file.name}` : `📎 File: ${file.name}`;
         
         appendChatMessage(myExt, fileTag, true);
         await sb.from('chat_messages').insert({
@@ -270,7 +292,7 @@ function initPeer() {
 
         peer.on('error', (err) => {
             if(err && err.type === 'unavailable-id') {
-                alert("এই এক্সটেনশন নম্বরটি ইতিমধ্যে ব্যবহৃত হচ্ছে!");
+                alert("Ei extension number-ti already byabohar kora hocche!");
                 logoutUser();
             }
         });
@@ -292,8 +314,8 @@ function backspaceKey() {
 }
 
 function makeCall() {
-    if(!dialBuffer) return alert("প্রথমে এক্সটেনশন নম্বর ডায়াল করুন!");
-    if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
+    if(!dialBuffer) return alert("Prothome extension number dial korun!");
+    if(dialBuffer === myExt) return alert("Nijeke call kora jabe na!");
 
     const targetExt = dialBuffer;
     const targetName = globalDirectory[targetExt] || ("Ext " + targetExt);
@@ -309,7 +331,7 @@ function makeCall() {
         currentCall = call;
         setupActiveCallScreen(call, targetName, targetExt);
     }).catch(() => {
-        alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
+        alert("Microphone permission proyojon!");
         if(screen) screen.innerText = "READY";
     });
 }
@@ -327,7 +349,7 @@ function answerCall() {
         currentCall = incomingCallObj;
         setupActiveCallScreen(currentCall, callerName, callerExt);
     }).catch(() => {
-        alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
+        alert("Microphone permission proyojon!");
     });
 }
 
@@ -370,7 +392,7 @@ function setupActiveCallScreen(call, name, ext) {
 function toggleSpeaker() {
     isSpeakerOn = !isSpeakerOn;
     const btn = document.getElementById("speaker-btn");
-    if(btn) btn.innerText = isSpeakerOn ? "🔊 স্পিকার: চালু" : "🔊 স্পিকার: বন্ধ";
+    if(btn) btn.innerText = isSpeakerOn ? "🔊 Speaker: Chalu" : "🔊 Speaker: Bondho";
 }
 
 function startCallTimer() {
