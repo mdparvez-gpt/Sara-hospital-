@@ -19,7 +19,10 @@ let callSeconds = 0;
 let audioContext = null;
 let ringtoneInterval = null;
 let isSpeakerOn = false;
-let globalUsersMap = {};
+let globalDirectory = {};
+let onlineExtensions = [];
+let unreadMessagesCounts = {};
+let missedCallsList = {};
 let currentChatExt = null;
 
 window.onload = function() {
@@ -36,7 +39,7 @@ window.onload = function() {
                 document.getElementById("user-info-display").innerText = `Ext: ${myExt}`;
                 
                 initPeer();
-                setupSupabasePresence();
+                setupSupabaseSync();
                 return;
             }
         }
@@ -64,7 +67,7 @@ async function registerUser() {
         localStorage.setItem("sara_hosp_user", JSON.stringify(user));
         
         if(sb) {
-            await sb.from('active_users').upsert({ ext, name, last_seen: new Date().toISOString() });
+            await sb.from('hospital_directory').upsert({ ext, name, last_seen: new Date().toISOString() });
         }
         location.reload();
     } catch(e) {
@@ -75,7 +78,7 @@ async function registerUser() {
 async function logoutUser() {
     try {
         if(myExt && sb) {
-            await sb.from('active_users').delete().eq('ext', myExt);
+            await sb.from('hospital_directory').update({ last_seen: null }).eq('ext', myExt);
         }
     } catch(e) {}
     localStorage.removeItem("sara_hosp_user");
@@ -83,60 +86,103 @@ async function logoutUser() {
     location.reload();
 }
 
-async function setupSupabasePresence() {
+async function setupSupabaseSync() {
     if(!sb) return;
     try {
-        await sb.from('active_users').upsert({ ext: myExt, name: myName, last_seen: new Date().toISOString() });
-        await fetchActiveUsers();
+        await sb.from('hospital_directory').upsert({ ext: myExt, name: myName, last_seen: new Date().toISOString() });
+        await loadDirectoryAndUnread();
 
-        sb.channel('realtime_active_users_room')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'active_users' }, async () => {
-              await fetchActiveUsers();
+        // Realtime Listener for Directory, Messages
+        sb.channel('sara_hosp_realtime_sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'hospital_directory' }, async () => {
+              await loadDirectoryAndUnread();
+          })
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
+              const newMsg = payload.new;
+              if(newMsg.receiver_ext === myExt) {
+                  if(currentChatExt !== newMsg.sender_ext) {
+                      unreadMessagesCounts[newMsg.sender_ext] = (unreadMessagesCounts[newMsg.sender_ext] || 0) + 1;
+                  } else {
+                      appendChatMessage(newMsg.sender_ext, newMsg.message, false);
+                  }
+                  await loadDirectoryAndUnread();
+              }
           })
           .subscribe();
     } catch(e) {}
 }
 
-async function fetchActiveUsers() {
+async function loadDirectoryAndUnread() {
     if(!sb) return;
     try {
-        const { data, error } = await sb.from('active_users').select('*');
-        if(error) return;
+        const { data: dirData } = await sb.from('hospital_directory').select('*');
+        globalDirectory = {};
+        onlineExtensions = [];
+
+        if(dirData) {
+            dirData.forEach(u => {
+                globalDirectory[u.ext] = u.name;
+                if(u.last_seen) onlineExtensions.push(u.ext);
+            });
+        }
 
         const listDiv = document.getElementById("active-users-list");
         if(!listDiv) return;
-        
         listDiv.innerHTML = "";
-        globalUsersMap = {};
 
-        if(data && data.length > 0) {
+        if(dirData && dirData.length > 0) {
             let count = 0;
-            data.forEach(u => {
-                globalUsersMap[u.ext] = u.name;
-                if(u.ext !== myExt) {
+            dirData.forEach(item => {
+                if(item.ext !== myExt) {
                     count++;
+                    const isOnline = onlineExtensions.includes(item.ext);
+                    const statusDot = isOnline ? "🟢" : "⚪";
+                    const unread = unreadMessagesCounts[item.ext] ? `<span class="unread-badge">${unreadMessagesCounts[item.ext]}</span>` : "";
+                    const missed = missedCallsList[item.ext] ? `<span class="missed-call-tag">⚠️ মিসড কল</span>` : "";
+
                     listDiv.innerHTML += `
-                        <div class="user-chip" onclick="openChat('${u.ext}', '${u.name}')">
-                            🟢 <strong>${u.name}</strong> (Ext: ${u.ext})
+                        <div class="user-chip" onclick="openChat('${item.ext}', '${item.name}')">
+                            ${statusDot} <strong>${item.name}</strong> (Ext: ${item.ext}) ${unread} ${missed}
                         </div>
                     `;
                 }
             });
             if(count === 0) {
-                listDiv.innerHTML = `<span class="no-user">অন্য কেউ অনলাইন নেই...</span>`;
+                listDiv.innerHTML = `<span class="no-user">অন্য কোনো ইউজার নেই...</span>`;
             }
         } else {
-            listDiv.innerHTML = `<span class="no-user">কেউ অনলাইন নেই</span>`;
+            listDiv.innerHTML = `<span class="no-user">ফোনবুক খালি আছে</span>`;
         }
     } catch(e) {}
 }
 
-// Feature 2: Open Chat Option on User Click
-function openChat(ext, name) {
+async function openChat(ext, name) {
     currentChatExt = ext;
+    unreadMessagesCounts[ext] = 0;
     document.getElementById("chat-target-name").innerText = `${name} (Ext: ${ext})`;
-    document.getElementById("chat-messages").innerHTML = `<div class="chat-msg">চ্যাট শুরু হয়েছে...</div>`;
     document.getElementById("chat-modal").style.display = "flex";
+    
+    // Load historical messages between me and this user
+    const msgArea = document.getElementById("chat-messages");
+    msgArea.innerHTML = `<div class="chat-msg">চ্যাট লোড হচ্ছে...</div>`;
+
+    if(sb) {
+        const { data } = await sb.from('chat_messages')
+            .select('*')
+            .or(`and(sender_ext.eq.${myExt},receiver_ext.eq.${ext}),and(sender_ext.eq.${ext},receiver_ext.eq.${myExt})`)
+            .order('created_at', { ascending: true });
+        
+        msgArea.innerHTML = "";
+        if(data && data.length > 0) {
+            data.forEach(m => {
+                const isMy = m.sender_ext === myExt;
+                appendChatMessage(m.sender_ext, m.message, isMy);
+            });
+        } else {
+            msgArea.innerHTML = `<div class="chat-msg">কথোপকথন শুরু করুন...</div>`;
+        }
+    }
+    await loadDirectoryAndUnread();
 }
 
 function closeChat() {
@@ -144,50 +190,58 @@ function closeChat() {
     currentChatExt = null;
 }
 
-function sendChatMessage() {
+async function sendChatMessage() {
     const input = document.getElementById("chat-text-input");
     const msg = input.value.trim();
-    if(!msg || !currentChatExt) return;
+    if(!msg || !currentChatExt || !sb) return;
 
-    const msgArea = document.getElementById("chat-messages");
-    msgArea.innerHTML += `<div class="chat-msg my">${msg}</div>`;
     input.value = "";
+    appendChatMessage(myExt, msg, true);
+
+    await sb.from('chat_messages').insert({
+        sender_ext: myExt,
+        receiver_ext: currentChatExt,
+        message: msg
+    });
+}
+
+function appendChatMessage(sender, msg, isMy) {
+    const msgArea = document.getElementById("chat-messages");
+    if(!msgArea) return;
+    const alignClass = isMy ? "chat-msg my" : "chat-msg";
+    msgArea.innerHTML += `<div class="${alignClass}">${msg}</div>`;
     msgArea.scrollTop = msgArea.scrollHeight;
-    
-    // PeerJS DataConnection can be used here for direct text/file messaging if needed
 }
 
 function handleChatKeyPress(e) {
     if(e.key === 'Enter') sendChatMessage();
 }
 
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
     const file = event.target.files[0];
-    if(!file) return;
+    if(!file || !currentChatExt || !sb) return;
 
-    const msgArea = document.getElementById("chat-messages");
-    if(file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            msgArea.innerHTML += `<div class="chat-msg my"><img src="${e.target.result}" style="max-width:150px; border-radius:6px;"><br><small>${file.name}</small></div>`;
-            msgArea.scrollTop = msgArea.scrollHeight;
-        }
-        reader.readAsDataURL(file);
-    } else {
-        msgArea.innerHTML += `<div class="chat-msg my">📎 ফাইল প্রেরিত: ${file.name}</div>`;
-        msgArea.scrollTop = msgArea.scrollHeight;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const fileData = e.target.result;
+        const fileTag = file.type.startsWith('image/') ? `<img src="${fileData}" style="max-width:150px; border-radius:6px;"><br>${file.name}` : `📎 ফাইল: ${file.name}`;
+        
+        appendChatMessage(myExt, fileTag, true);
+        await sb.from('chat_messages').insert({
+            sender_ext: myExt,
+            receiver_ext: currentChatExt,
+            message: fileTag
+        });
     }
+    reader.readAsDataURL(file);
 }
 
 function startCallFromChat() {
     if(!currentChatExt) return;
+    const target = currentChatExt;
     closeChat();
-    dialBuffer = currentChatExt;
+    dialBuffer = target;
     makeCall();
-}
-
-function quickCall(ext) {
-    openChat(ext, globalUsersMap[ext] || ext);
 }
 
 function initPeer() {
@@ -202,7 +256,7 @@ function initPeer() {
         peer.on('call', (call) => {
             incomingCallObj = call;
             const callerExt = call.peer.replace('sara-hosp-', '');
-            const callerName = globalUsersMap[callerExt] || (call.metadata && call.metadata.callerName) || ("Ext " + callerExt);
+            const callerName = globalDirectory[callerExt] || ("Ext " + callerExt);
 
             const callerInfo = document.getElementById("caller-info");
             if(callerInfo) callerInfo.innerText = `${callerName} (Ext: ${callerExt})`;
@@ -242,7 +296,7 @@ function makeCall() {
     if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
 
     const targetExt = dialBuffer;
-    const targetName = globalUsersMap[targetExt] || ("Ext " + targetExt);
+    const targetName = globalDirectory[targetExt] || ("Ext " + targetExt);
     const targetId = "sara-hosp-" + targetExt;
     
     const screen = document.getElementById("screen-display");
@@ -266,7 +320,7 @@ function answerCall() {
     if(modal) modal.style.display = "none";
     
     const callerExt = incomingCallObj.peer.replace('sara-hosp-', '');
-    const callerName = globalUsersMap[callerExt] || (incomingCallObj.metadata && incomingCallObj.metadata.callerName) || ("Ext " + callerExt);
+    const callerName = globalDirectory[callerExt] || ("Ext " + callerExt);
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
         incomingCallObj.answer(stream);
@@ -281,6 +335,11 @@ function rejectCall() {
     stopRingtone();
     const modal = document.getElementById("incoming-modal");
     if(modal) modal.style.display = "none";
+    
+    const callerExt = incomingCallObj.peer.replace('sara-hosp-', '');
+    missedCallsList[callerExt] = true;
+    loadDirectoryAndUnread();
+
     if(incomingCallObj) incomingCallObj.close();
     incomingCallObj = null;
 }

@@ -31,9 +31,9 @@
         <div class="lcd-display-text" id="screen-display">READY</div>
     </div>
 
-    <!-- Phone Book Directory (Realtime Sync) -->
+    <!-- Phone Book Directory (Permanent + Realtime Active Status) -->
     <div class="directory-panel">
-        <div class="directory-title">ফোনবুক (রিয়েল-টাইম ইউজার লিস্ট)</div>
+        <div class="directory-title">ফোনবুক ও ইউজার তালিকা</div>
         <div id="active-users-list" class="users-scroll">
             <span class="no-user">লোড হচ্ছে...</span>
         </div>
@@ -66,7 +66,7 @@
     </div>
 </div>
 
-<!-- Chat Window Modal (Feature 2) -->
+<!-- Messenger Style Chat Window -->
 <div id="chat-modal" class="incoming-screen" style="display:none;">
     <div class="incoming-card chat-card">
         <div class="chat-header">
@@ -74,7 +74,7 @@
             <button onclick="closeChat()" class="close-chat-btn">✖</button>
         </div>
         <div id="chat-messages" class="chat-messages-area">
-            <!-- Messages will appear here -->
+            <!-- Messages -->
         </div>
         <div class="chat-input-area">
             <input type="file" id="chat-file-input" style="display:none" onchange="handleFileUpload(event)">
@@ -117,5 +117,4 @@
 <script src="app.js"></script>
 </body>
 </html>
-
 
