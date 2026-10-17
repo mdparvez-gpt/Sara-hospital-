@@ -25,6 +25,11 @@ let missedCallsList = {};
 let currentChatExt = null;
 
 window.onload = function() {
+    // Request Browser Notification Permission on load
+    if (window.Notification && Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
+
     try {
         const savedProfile = localStorage.getItem("sara_hosp_user");
         if(savedProfile) {
@@ -47,6 +52,23 @@ window.onload = function() {
     document.getElementById("app-container").style.display = "none";
     document.getElementById("reg-modal").style.display = "flex";
 };
+
+// Show Messenger style floating/browser notification
+function showBrowserNotification(title, bodyText) {
+    if (window.Notification && Notification.permission === "granted") {
+        try {
+            const notification = new Notification(title, {
+                body: bodyText,
+                icon: "https://cdn-icons-png.flaticon.com/512/3059/3059518.png",
+                vibrate: [200, 100, 200]
+            });
+            notification.onclick = function() {
+                window.focus();
+                notification.close();
+            };
+        } catch(e) {}
+    }
+}
 
 async function registerUser() {
     try {
@@ -117,6 +139,11 @@ async function setupSupabaseSync() {
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
               const newMsg = payload.new;
               if(newMsg.receiver_ext === myExt) {
+                  const senderName = globalDirectory[newMsg.sender_ext] || `Ext: ${newMsg.sender_ext}`;
+                  
+                  // Trigger browser popup notification when minimized/bg
+                  showBrowserNotification(`নতুন মেসেজ - ${senderName}`, newMsg.message);
+
                   if(currentChatExt !== newMsg.sender_ext) {
                       unreadMessagesCounts[newMsg.sender_ext] = (unreadMessagesCounts[newMsg.sender_ext] || 0) + 1;
                   } else {
@@ -291,6 +318,9 @@ function initPeer() {
             const callerExt = call.peer.replace('sara-hosp-', '');
             const callerName = globalDirectory[callerExt] || ("Ext " + callerExt);
 
+            // Trigger browser popup notification for incoming call in background
+            showBrowserNotification(`📞 ইনকামিং কল!`, `${callerName} থেকে কল এসেছে`);
+
             const callerInfo = document.getElementById("caller-info");
             if(callerInfo) callerInfo.innerText = `${callerName} (Ext: ${callerExt})`;
             
@@ -341,8 +371,7 @@ function makeCall() {
         });
         currentCall = call;
         setupActiveCallScreen(call, targetName, targetExt);
-    }).catch((err) => {
-        // If peer is offline / unavailable, mark as missed call in chat/directory
+    }).catch(() => {
         alert("ইউজার বর্তমানে অফলাইন বা ব্রাউজারে নেই!");
         if(screen) screen.innerText = "READY";
         missedCallsList[targetExt] = true;
@@ -457,7 +486,7 @@ function hangUp() {
 function resetUI() {
     stopRingtone();
     if(callTimerInterval) {
-        clearInterval(callTimerInterval);
+        clearInterval(callTimerInt);
         callTimerInterval = null;
     }
     dialBuffer = "";
@@ -473,13 +502,5 @@ function resetUI() {
     currentCall = null;
     incomingCallObj = null;
     isSpeakerOn = false;
-}
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('Service Worker registered!'))
-            .catch(err => console.log('Service Worker failed:', err));
-    });
 }
 
