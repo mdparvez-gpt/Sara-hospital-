@@ -15,10 +15,10 @@ let callSeconds = 0;
 let audioContext = null;
 let ringtoneInterval = null;
 let isSpeakerOn = false;
-let globalUsersMap = {};
+let globalDirectory = {};
+let onlineExtensions = [];
 
 window.onload = function() {
-    // Request microphone permission early
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
         stream.getTracks().forEach(track => track.stop());
     }).catch(() => {});
@@ -31,13 +31,13 @@ window.onload = function() {
         document.getElementById("app-container").style.display = "block";
         document.getElementById("user-info-display").innerText = `${myName} (Ext: ${myExt})`;
         initPeer();
-        setupSupabasePresence();
+        setupSupabaseSync();
     } else {
         document.getElementById("reg-modal").style.display = "flex";
     }
 };
 
-function registerUser() {
+async function registerUser() {
     const name = document.getElementById("reg-name").value.trim();
     const ext = document.getElementById("reg-ext").value.trim();
 
@@ -48,6 +48,9 @@ function registerUser() {
 
     const user = { name, ext };
     localStorage.setItem("sara_hosp_user", JSON.stringify(user));
+    
+    // Also automatically register into permanent directory so others can see
+    await sb.from('hospital_directory').upsert({ ext, name });
     location.reload();
 }
 
@@ -60,46 +63,85 @@ async function logoutUser() {
     location.reload();
 }
 
-async function setupSupabasePresence() {
-    await sb.from('active_users').upsert({ ext: myExt, name: myName });
-    fetchActiveUsers();
+async function setupSupabaseSync() {
+    // Set active presence
+    await sb.from('active_users').upsert({ ext: myExt, name: myName, last_seen: new Date().toISOString() });
+    await sb.from('hospital_directory').upsert({ ext: myExt, name: myName });
 
-    sb.channel('public:active_users')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_users' }, () => {
-          fetchActiveUsers();
+    await loadDirectoryAndActiveUsers();
+
+    // Realtime listeners for both directory and active status
+    sb.channel('sync_all_channels')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hospital_directory' }, async () => {
+          await loadDirectoryAndActiveUsers();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_users' }, async () => {
+          await loadDirectoryAndActiveUsers();
       })
       .subscribe();
 }
 
-async function fetchActiveUsers() {
-    const { data, error } = await sb.from('active_users').select('*');
-    if(error) return;
+async function loadDirectoryAndActiveUsers() {
+    // 1. Fetch Permanent Directory
+    const { data: dirData } = await sb.from('hospital_directory').select('*');
+    // 2. Fetch Active Users
+    const { data: activeData } = await sb.from('active_users').select('*');
 
-    const listDiv = document.getElementById("active-users-list");
+    globalDirectory = {};
+    onlineExtensions = [];
+
+    if(activeData) {
+        activeData.forEach(u => onlineExtensions.push(u.ext));
+    }
+
+    const listDiv = document.getElementById("directory-users-list");
     listDiv.innerHTML = "";
-    globalUsersMap = {};
-    
-    if(data && data.length > 0) {
-        data.forEach(u => {
-            globalUsersMap[u.ext] = u.name;
-            if(u.ext !== myExt) {
+
+    if(dirData && dirData.length > 0) {
+        dirData.forEach(item => {
+            globalDirectory[item.ext] = item.name;
+            if(item.ext !== myExt) {
+                const isOnline = onlineExtensions.includes(item.ext);
+                const statusDot = isOnline ? "🟢" : "⚪";
+                const onlineClass = isOnline ? "online" : "";
+
                 listDiv.innerHTML += `
-                    <div class="user-chip" onclick="quickCall('${u.ext}')">
-                        🟢 ${u.name} (${u.ext})
+                    <div class="user-chip ${onlineClass}" onclick="quickCall('${item.ext}')">
+                        ${statusDot} <strong>${item.name}</strong> (Ext: ${item.ext})
                     </div>
                 `;
             }
         });
-        if(Object.keys(globalUsersMap).length <= 1) {
-            listDiv.innerHTML = `<span class="no-user">অন্য কেউ অনলাইন নেই</span>`;
-        }
     } else {
-        listDiv.innerHTML = `<span class="no-user">কেউ অনলাইন নেই</span>`;
+        listDiv.innerHTML = `<span class="no-user">কোনো এক্সটেনশন নেই</span>`;
+    }
+}
+
+function toggleAddBox() {
+    const box = document.getElementById("add-dir-box");
+    box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+async function addNewDirectoryContact() {
+    const name = document.getElementById("new-dir-name").value.trim();
+    const ext = document.getElementById("new-dir-ext").value.trim();
+
+    if(!name || !ext) return alert("নাম এবং এক্সটেনশন দিন!");
+
+    const { error } = await sb.from('hospital_directory').upsert({ ext, name });
+    if(error) {
+        alert("সংরক্ষণ করতে সমস্যা হয়েছে!");
+    } else {
+        document.getElementById("new-dir-name").value = "";
+        document.getElementById("new-dir-ext").value = "";
+        document.getElementById("add-dir-box").style.display = "none";
+        await loadDirectoryAndActiveUsers();
     }
 }
 
 function quickCall(ext) {
     dialBuffer = ext;
+    document.getElementById("screen-display").innerText = dialBuffer;
     makeCall();
 }
 
@@ -113,7 +155,7 @@ function initPeer() {
     peer.on('call', (call) => {
         incomingCallObj = call;
         const callerExt = call.peer.replace('sara-hosp-', '');
-        const callerName = globalUsersMap[callerExt] || callerExt;
+        const callerName = globalDirectory[callerExt] || (call.metadata && call.metadata.callerName) || ("Ext " + callerExt);
 
         document.getElementById("caller-info").innerText = `${callerName} (Ext: ${callerExt})`;
         document.getElementById("incoming-modal").style.display = "flex";
@@ -147,15 +189,17 @@ function makeCall() {
     if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
 
     const targetExt = dialBuffer;
-    const targetName = globalUsersMap[targetExt] || targetExt;
+    const targetName = globalDirectory[targetExt] || ("Ext " + targetExt);
     const targetId = "sara-hosp-" + targetExt;
     
     document.getElementById("screen-display").innerText = "CALLING...";
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        const call = peer.call(targetId, stream);
+        const call = peer.call(targetId, stream, {
+            metadata: { callerName: myName, callerExt: myExt }
+        });
         currentCall = call;
-        setupActiveCall(call, targetName, targetExt);
+        setupActiveCallScreen(call, targetName, targetExt);
     }).catch(() => {
         alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
         document.getElementById("screen-display").innerText = "READY";
@@ -167,12 +211,12 @@ function answerCall() {
     document.getElementById("incoming-modal").style.display = "none";
     
     const callerExt = incomingCallObj.peer.replace('sara-hosp-', '');
-    const callerName = globalUsersMap[callerExt] || callerExt;
+    const callerName = globalDirectory[callerExt] || (incomingCallObj.metadata && incomingCallObj.metadata.callerName) || ("Ext " + callerExt);
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
         incomingCallObj.answer(stream);
         currentCall = incomingCallObj;
-        setupActiveCall(currentCall, callerName, callerExt);
+        setupActiveCallScreen(currentCall, callerName, callerExt);
     }).catch(() => {
         alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
     });
@@ -185,16 +229,17 @@ function rejectCall() {
     incomingCallObj = null;
 }
 
-function setupActiveCall(call, name, ext) {
-    document.getElementById("incoming-modal").style.display = "none";
+function setupActiveCallScreen(call, name, ext) {
     document.getElementById("active-call-modal").style.display = "flex";
     document.getElementById("connected-target-info").innerText = `${name} (Ext: ${ext})`;
-    
-    startCallTimer();
+    document.getElementById("call-timer").innerText = "Connecting...";
 
     call.on('stream', (remoteStream) => {
         const audioEle = document.getElementById("remote-audio");
         audioEle.srcObject = remoteStream;
+        if(!callTimerInterval) {
+            startCallTimer();
+        }
     });
 
     call.on('close', () => {
@@ -203,17 +248,15 @@ function setupActiveCall(call, name, ext) {
 }
 
 function toggleSpeaker() {
-    const audioEle = document.getElementById("remote-audio");
     isSpeakerOn = !isSpeakerOn;
-    if(audioEle.setSinkId) {
-        // Supported browsers speaker switch
-    }
     document.getElementById("speaker-btn").innerText = isSpeakerOn ? "🔊 স্পিকার: চালু" : "🔊 স্পিকার: বন্ধ";
 }
 
 function startCallTimer() {
     callSeconds = 0;
     document.getElementById("call-timer").innerText = "00:00";
+    if(callTimerInterval) clearInterval(callTimerInterval);
+    
     callTimerInterval = setInterval(() => {
         callSeconds++;
         let mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
@@ -255,7 +298,10 @@ function hangUp() {
 
 function resetUI() {
     stopRingtone();
-    if(callTimerInterval) clearInterval(callTimerInterval);
+    if(callTimerInterval) {
+        clearInterval(callTimerInterval);
+        callTimerInterval = null;
+    }
     dialBuffer = "";
     document.getElementById("screen-display").innerText = "READY";
     document.getElementById("incoming-modal").style.display = "none";

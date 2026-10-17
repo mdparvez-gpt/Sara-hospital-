@@ -15,7 +15,7 @@
     <div class="landline-base modal-box">
         <div class="brand-title">SARA HOSPITAL</div>
         <div class="brand-sub">INTERNAL IP INTERCOM</div>
-        <input type="text" id="reg-name" placeholder="আপনার নাম বা ডিপার্টমেন্ট (যেমন: ICU Desk)">
+        <input type="text" id="reg-name" placeholder="আপনার নাম বা ডিপার্টমেন্ট (যেমন: ICU)">
         <input type="text" id="reg-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 101)">
         <button onclick="registerUser()" class="landline-save-btn">রেজিস্ট্রেশন করুন</button>
     </div>
@@ -32,11 +32,21 @@
         <div class="lcd-display-text" id="screen-display">নম্বর ডায়াল করুন</div>
     </div>
 
-    <!-- Active Users Directory (Live Sync) -->
+    <!-- Permanent Hospital Directory & Online Status -->
     <div class="directory-panel">
-        <div class="directory-title">অনলাইন এক্সটেনশন তালিকা</div>
-        <div id="active-users-list" class="users-scroll">
-            <span class="no-user">কেউ অনলাইন নেই...</span>
+        <div class="directory-title">হাসপাতাল ফোনবুক ও এক্সটেনশন তালিকা</div>
+        <div id="directory-users-list" class="users-scroll">
+            <span class="no-user">লোড হচ্ছে...</span>
+        </div>
+        <!-- Add New Directory Contact Button / Form Toggle -->
+        <div style="margin-top: 8px; border-top: 1px solid #1e293b; padding-top: 6px; display:flex; justify-content: space-between; align-items:center;">
+            <small style="color:#64748b; font-size:11px;">নতুন এক্সটেনশন যোগ করুন:</small>
+            <button onclick="toggleAddBox()" style="background:#334155; color:#38bdf8; border:none; padding:2px 8px; border-radius:4px; font-size:11px; cursor:pointer;">+ যুক্ত করুন</button>
+        </div>
+        <div id="add-dir-box" style="display:none; margin-top:6px;">
+            <input type="text" id="new-dir-name" placeholder="নাম (যেমন: OT Desk)" style="width:100%; padding:6px; background:#040812; border:1px solid #334155; color:white; border-radius:4px; font-size:12px; margin-bottom:4px; box-sizing:border-box;">
+            <input type="text" id="new-dir-ext" placeholder="এক্সটেনশন (যেমন: 105)" style="width:100%; padding:6px; background:#040812; border:1px solid #334155; color:white; border-radius:4px; font-size:12px; margin-bottom:4px; box-sizing:border-box;">
+            <button onclick="addNewDirectoryContact()" style="width:100%; background:#22c55e; color:white; border:none; padding:6px; border-radius:4px; font-size:12px; font-weight:bold; cursor:pointer;">ফোনে সেভ করুন</button>
         </div>
     </div>
 
