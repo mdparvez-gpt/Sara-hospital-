@@ -504,3 +504,13 @@ function resetUI() {
     isSpeakerOn = false;
 }
 
+// Keep Realtime active when returning from background
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        if(sb) setupSupabaseSync();
+        if(peer && peer.disconnected) {
+            peer.reconnect();
+        }
+    }
+});
+
