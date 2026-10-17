@@ -12,8 +12,17 @@ let myExt = "";
 let myName = "";
 let callTimerInterval = null;
 let callSeconds = 0;
+let audioContext = null;
+let ringtoneInterval = null;
+let isSpeakerOn = false;
+let globalUsersMap = {};
 
 window.onload = function() {
+    // Request microphone permission early
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+    }).catch(() => {});
+
     const savedProfile = localStorage.getItem("sara_hosp_user");
     if(savedProfile) {
         const user = JSON.parse(savedProfile);
@@ -33,7 +42,7 @@ function registerUser() {
     const ext = document.getElementById("reg-ext").value.trim();
 
     if(!name || !ext) {
-        alert("নাম এবং এক্সটেনশন দিন!");
+        alert("দয়া করে নাম এবং এক্সটেনশন নম্বর উভয়ই দিন!");
         return;
     }
 
@@ -68,9 +77,11 @@ async function fetchActiveUsers() {
 
     const listDiv = document.getElementById("active-users-list");
     listDiv.innerHTML = "";
+    globalUsersMap = {};
     
     if(data && data.length > 0) {
         data.forEach(u => {
+            globalUsersMap[u.ext] = u.name;
             if(u.ext !== myExt) {
                 listDiv.innerHTML += `
                     <div class="user-chip" onclick="quickCall('${u.ext}')">
@@ -79,8 +90,11 @@ async function fetchActiveUsers() {
                 `;
             }
         });
+        if(Object.keys(globalUsersMap).length <= 1) {
+            listDiv.innerHTML = `<span class="no-user">অন্য কেউ অনলাইন নেই</span>`;
+        }
     } else {
-        listDiv.innerHTML = `<span style="color:#64748b; font-size:13px;">অন্য কেউ অনলাইন নেই</span>`;
+        listDiv.innerHTML = `<span class="no-user">কেউ অনলাইন নেই</span>`;
     }
 }
 
@@ -93,14 +107,19 @@ function initPeer() {
     peer = new Peer("sara-hosp-" + myExt);
 
     peer.on('open', () => {
-        document.getElementById("screen-display").innerText = "প্রস্তুত (Ready)";
+        document.getElementById("screen-display").innerText = "READY";
     });
 
     peer.on('call', (call) => {
         incomingCallObj = call;
-        document.getElementById("caller-info").innerText = `এক্সটেনশন ${call.peer.replace('sara-hosp-', '')} থেকে কল আসছে...`;
+        const callerExt = call.peer.replace('sara-hosp-', '');
+        const callerName = globalUsersMap[callerExt] || callerExt;
+
+        document.getElementById("caller-info").innerText = `${callerName} (Ext: ${callerExt})`;
         document.getElementById("incoming-modal").style.display = "flex";
-        if (navigator.vibrate) navigator.vibrate([400, 400, 400]);
+        
+        if (navigator.vibrate) navigator.vibrate([500, 500, 500, 500]);
+        startRingtone();
     });
 
     peer.on('error', (err) => {
@@ -112,57 +131,84 @@ function initPeer() {
 }
 
 function pressKey(num) {
-    dialBuffer += num;
-    document.getElementById("screen-display").innerText = dialBuffer;
+    if(dialBuffer.length < 8) {
+        dialBuffer += num;
+        document.getElementById("screen-display").innerText = dialBuffer;
+    }
+}
+
+function backspaceKey() {
+    dialBuffer = dialBuffer.slice(0, -1);
+    document.getElementById("screen-display").innerText = dialBuffer || "READY";
 }
 
 function makeCall() {
-    if(!dialBuffer) return alert("নম্বর ডায়াল করুন!");
+    if(!dialBuffer) return alert("প্রথমে এক্সটেনশন নম্বর ডায়াল করুন!");
     if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
 
-    const targetId = "sara-hosp-" + dialBuffer;
-    document.getElementById("screen-display").innerText = "কলিং " + dialBuffer + "...";
+    const targetExt = dialBuffer;
+    const targetName = globalUsersMap[targetExt] || targetExt;
+    const targetId = "sara-hosp-" + targetExt;
+    
+    document.getElementById("screen-display").innerText = "CALLING...";
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
         const call = peer.call(targetId, stream);
         currentCall = call;
-        setupActiveCall(call);
+        setupActiveCall(call, targetName, targetExt);
     }).catch(() => {
         alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
-        resetUI();
+        document.getElementById("screen-display").innerText = "READY";
     });
 }
 
 function answerCall() {
+    stopRingtone();
     document.getElementById("incoming-modal").style.display = "none";
+    
+    const callerExt = incomingCallObj.peer.replace('sara-hosp-', '');
+    const callerName = globalUsersMap[callerExt] || callerExt;
+
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
         incomingCallObj.answer(stream);
         currentCall = incomingCallObj;
-        setupActiveCall(currentCall);
+        setupActiveCall(currentCall, callerName, callerExt);
     }).catch(() => {
         alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
     });
 }
 
 function rejectCall() {
+    stopRingtone();
     document.getElementById("incoming-modal").style.display = "none";
     if(incomingCallObj) incomingCallObj.close();
     incomingCallObj = null;
 }
 
-function setupActiveCall(call) {
+function setupActiveCall(call, name, ext) {
     document.getElementById("incoming-modal").style.display = "none";
     document.getElementById("active-call-modal").style.display = "flex";
+    document.getElementById("connected-target-info").innerText = `${name} (Ext: ${ext})`;
     
     startCallTimer();
 
     call.on('stream', (remoteStream) => {
-        document.getElementById("remote-audio").srcObject = remoteStream;
+        const audioEle = document.getElementById("remote-audio");
+        audioEle.srcObject = remoteStream;
     });
 
     call.on('close', () => {
         resetUI();
     });
+}
+
+function toggleSpeaker() {
+    const audioEle = document.getElementById("remote-audio");
+    isSpeakerOn = !isSpeakerOn;
+    if(audioEle.setSinkId) {
+        // Supported browsers speaker switch
+    }
+    document.getElementById("speaker-btn").innerText = isSpeakerOn ? "🔊 স্পিকার: চালু" : "🔊 স্পিকার: বন্ধ";
 }
 
 function startCallTimer() {
@@ -176,18 +222,46 @@ function startCallTimer() {
     }, 1000);
 }
 
+function startRingtone() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        ringtoneInterval = setInterval(() => {
+            if(!audioContext) return;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(440, audioContext.currentTime);
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.3);
+        }, 1000);
+    } catch(e) {}
+}
+
+function stopRingtone() {
+    if(ringtoneInterval) clearInterval(ringtoneInterval);
+    if(audioContext) {
+        audioContext.close();
+        audioContext = null;
+    }
+}
+
 function hangUp() {
     if(currentCall) currentCall.close();
     resetUI();
 }
 
 function resetUI() {
+    stopRingtone();
     if(callTimerInterval) clearInterval(callTimerInterval);
     dialBuffer = "";
-    document.getElementById("screen-display").innerText = "প্রস্তুত (Ready)";
+    document.getElementById("screen-display").innerText = "READY";
     document.getElementById("incoming-modal").style.display = "none";
     document.getElementById("active-call-modal").style.display = "none";
     currentCall = null;
     incomingCallObj = null;
+    isSpeakerOn = false;
 }
 
