@@ -116,6 +116,19 @@ body {
 .phone-footer { text-align: center; margin-top: 12px; }
 .logout-link { background: none; border: none; color: #f87171; font-size: 12px; cursor: pointer; text-decoration: underline; }
 
+/* Chat Window Styles */
+.chat-card { width: 90%; max-width: 350px; height: 420px; display: flex; flex-direction: column; padding: 12px !important; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; font-size: 15px; color: #38bdf8; }
+.close-chat-btn { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; }
+.chat-messages-area { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; text-align: left; }
+.chat-msg { background: #334155; padding: 6px 10px; border-radius: 8px; max-width: 80%; word-break: break-all; }
+.chat-msg.my { background: #0369a1; align-self: flex-end; }
+.chat-input-area { display: flex; gap: 6px; align-items: center; border-top: 1px solid #334155; padding-top: 8px; }
+.chat-input-area input[type="text"] { flex: 1; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; font-size: 12px; }
+.attachment-btn, .send-msg-btn, .chat-call-btn { background: #334155; border: none; color: white; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.send-msg-btn { background: #0284c7; }
+.chat-call-btn { background: #16a34a; }
+
 .incoming-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(2, 6, 23, 0.95);

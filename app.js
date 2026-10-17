@@ -20,6 +20,7 @@ let audioContext = null;
 let ringtoneInterval = null;
 let isSpeakerOn = false;
 let globalUsersMap = {};
+let currentChatExt = null;
 
 window.onload = function() {
     try {
@@ -115,7 +116,7 @@ async function fetchActiveUsers() {
                 if(u.ext !== myExt) {
                     count++;
                     listDiv.innerHTML += `
-                        <div class="user-chip" onclick="quickCall('${u.ext}')">
+                        <div class="user-chip" onclick="openChat('${u.ext}', '${u.name}')">
                             🟢 <strong>${u.name}</strong> (Ext: ${u.ext})
                         </div>
                     `;
@@ -130,11 +131,63 @@ async function fetchActiveUsers() {
     } catch(e) {}
 }
 
-function quickCall(ext) {
-    dialBuffer = ext;
-    const screen = document.getElementById("screen-display");
-    if(screen) screen.innerText = dialBuffer;
+// Feature 2: Open Chat Option on User Click
+function openChat(ext, name) {
+    currentChatExt = ext;
+    document.getElementById("chat-target-name").innerText = `${name} (Ext: ${ext})`;
+    document.getElementById("chat-messages").innerHTML = `<div class="chat-msg">চ্যাট শুরু হয়েছে...</div>`;
+    document.getElementById("chat-modal").style.display = "flex";
+}
+
+function closeChat() {
+    document.getElementById("chat-modal").style.display = "none";
+    currentChatExt = null;
+}
+
+function sendChatMessage() {
+    const input = document.getElementById("chat-text-input");
+    const msg = input.value.trim();
+    if(!msg || !currentChatExt) return;
+
+    const msgArea = document.getElementById("chat-messages");
+    msgArea.innerHTML += `<div class="chat-msg my">${msg}</div>`;
+    input.value = "";
+    msgArea.scrollTop = msgArea.scrollHeight;
+    
+    // PeerJS DataConnection can be used here for direct text/file messaging if needed
+}
+
+function handleChatKeyPress(e) {
+    if(e.key === 'Enter') sendChatMessage();
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+
+    const msgArea = document.getElementById("chat-messages");
+    if(file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            msgArea.innerHTML += `<div class="chat-msg my"><img src="${e.target.result}" style="max-width:150px; border-radius:6px;"><br><small>${file.name}</small></div>`;
+            msgArea.scrollTop = msgArea.scrollHeight;
+        }
+        reader.readAsDataURL(file);
+    } else {
+        msgArea.innerHTML += `<div class="chat-msg my">📎 ফাইল প্রেরিত: ${file.name}</div>`;
+        msgArea.scrollTop = msgArea.scrollHeight;
+    }
+}
+
+function startCallFromChat() {
+    if(!currentChatExt) return;
+    closeChat();
+    dialBuffer = currentChatExt;
     makeCall();
+}
+
+function quickCall(ext) {
+    openChat(ext, globalUsersMap[ext] || ext);
 }
 
 function initPeer() {
