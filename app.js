@@ -6,9 +6,7 @@ try {
     if (window.supabase) {
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
-} catch(e) {
-    console.error("Supabase init error:", e);
-}
+} catch(e) {}
 
 let peer = null;
 let currentCall = null;
@@ -34,18 +32,15 @@ window.onload = function() {
                 
                 document.getElementById("reg-modal").style.display = "none";
                 document.getElementById("app-container").style.display = "block";
-                document.getElementById("user-info-display").innerText = `${myName} (Ext: ${myExt})`;
+                document.getElementById("user-info-display").innerText = `Ext: ${myExt}`;
                 
                 initPeer();
                 setupSupabasePresence();
                 return;
             }
         }
-    } catch(e) {
-        console.error("Load error:", e);
-    }
+    } catch(e) {}
 
-    // Default: Show registration if no valid profile
     document.getElementById("app-container").style.display = "none";
     document.getElementById("reg-modal").style.display = "flex";
 };
@@ -127,7 +122,7 @@ async function fetchActiveUsers() {
                 }
             });
             if(count === 0) {
-                listDiv.innerHTML = `<span class="no-user">অন্য কেউ লগইন করেনি...</span>`;
+                listDiv.innerHTML = `<span class="no-user">অন্য কেউ অনলাইন নেই...</span>`;
             }
         } else {
             listDiv.innerHTML = `<span class="no-user">কেউ অনলাইন নেই</span>`;

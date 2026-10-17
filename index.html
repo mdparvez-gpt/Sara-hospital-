@@ -10,8 +10,8 @@
 </head>
 <body>
 
-<!-- Registration Overlay -->
-<div id="reg-modal" class="modal-overlay">
+<!-- Registration Modal -->
+<div id="reg-modal" class="modal-overlay" style="display:none;">
     <div class="landline-base modal-box">
         <div class="brand-title">SARA HOSPITAL</div>
         <div class="brand-sub">INTERNAL IP INTERCOM</div>
@@ -21,8 +21,9 @@
     </div>
 </div>
 
-<!-- Landline Phone Main Layout -->
+<!-- Landline Phone Main Container -->
 <div class="landline-phone" id="app-container" style="display:none;">
+    <!-- LCD Display Screen -->
     <div class="lcd-screen">
         <div class="lcd-header">
             <span id="user-info-display">Ext: --</span>
@@ -31,13 +32,15 @@
         <div class="lcd-display-text" id="screen-display">READY</div>
     </div>
 
+    <!-- Active Registered Users List (Live Realtime Sync) -->
     <div class="directory-panel">
-        <div class="directory-title">অনলাইন এক্সটেনশনসমূহ</div>
+        <div class="directory-title">অনলাইন এক্সটেনশন তালিকা</div>
         <div id="active-users-list" class="users-scroll">
             <span class="no-user">লোড হচ্ছে...</span>
         </div>
     </div>
 
+    <!-- Physical Keypad Layout -->
     <div class="keypad-panel">
         <div class="keypad-grid">
             <button class="k-btn" onclick="pressKey('1')">1</button>
@@ -55,12 +58,13 @@
         </div>
         <div class="action-row">
             <button class="k-btn backspace-btn" onclick="backspaceKey()">⌫ ডিলিট</button>
-            <button class="k-btn call-action-btn" onclick="makeCall()">☎ কল</button>
+            <button class="k-btn call-action-btn" onclick="makeCall()">☎ কল করুন</button>
         </div>
     </div>
 
+    <!-- Footer Logout -->
     <div class="phone-footer">
-        <button onclick="logoutUser()" class="logout-link">লগআউট / পরিবর্তন</button>
+        <button onclick="logoutUser()" class="logout-link">লগআউট / অ্যাকাউন্ট পরিবর্তন</button>
     </div>
 </div>
 
