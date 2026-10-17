@@ -63,7 +63,6 @@ async function registerUser() {
         }
 
         if(sb) {
-            // Check if extension already exists
             const { data: existing } = await sb
                 .from('hospital_directory')
                 .select('*')
@@ -140,14 +139,12 @@ async function loadSectionsData() {
         if(dirData) {
             dirData.forEach(u => {
                 globalDirectory[u.ext] = u.name;
-                // Check if active (last_seen within 5 minutes or valid timestamp)
                 if(u.last_seen) {
                     onlineList.push(u);
                 }
             });
         }
 
-        // Section 1: Phone Book (All Registered Users)
         const phonebookDiv = document.getElementById("phonebook-list");
         if(phonebookDiv) {
             phonebookDiv.innerHTML = "";
@@ -170,7 +167,6 @@ async function loadSectionsData() {
             if(countPb === 0) phonebookDiv.innerHTML = `<span class="no-user">কোনো ইউজার নেই</span>`;
         }
 
-        // Section 2: Online Users
         const onlineDiv = document.getElementById("online-users-list");
         if(onlineDiv) {
             onlineDiv.innerHTML = "";
@@ -196,6 +192,7 @@ async function loadSectionsData() {
 async function openChat(ext, name) {
     currentChatExt = ext;
     unreadMessagesCounts[ext] = 0;
+    missedCallsList[ext] = false;
     document.getElementById("chat-target-name").innerText = `${name} (Ext: ${ext})`;
     document.getElementById("chat-modal").style.display = "flex";
     
@@ -344,9 +341,12 @@ function makeCall() {
         });
         currentCall = call;
         setupActiveCallScreen(call, targetName, targetExt);
-    }).catch(() => {
-        alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
+    }).catch((err) => {
+        // If peer is offline / unavailable, mark as missed call in chat/directory
+        alert("ইউজার বর্তমানে অফলাইন বা ব্রাউজারে নেই!");
         if(screen) screen.innerText = "READY";
+        missedCallsList[targetExt] = true;
+        loadSectionsData();
     });
 }
 
