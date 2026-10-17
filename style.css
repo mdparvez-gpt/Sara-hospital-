@@ -1,14 +1,105 @@
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #fff; display: flex; justify-content: center; padding: 15px; margin: 0; }
-.phone-container { background: #1e293b; border-radius: 20px; padding: 20px; width: 100%; max-width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-.profile-card, .add-contact-box { background: #334155; padding: 12px; border-radius: 12px; margin-bottom: 15px; }
-input { width: 90%; padding: 8px; margin: 4px 0; border-radius: 6px; border: none; outline: none; }
-button { background: #0284c7; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 5px; width: 100%; }
-.screen { background: #0369a1; color: #e0f2fe; padding: 15px; border-radius: 10px; text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 15px; min-height: 30px; letter-spacing: 2px; }
-.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-.btn { background: #475569; border: none; color: white; font-size: 22px; padding: 15px; border-radius: 10px; font-weight: bold; }
-.btn:active { background: #0284c7; }
-.call-btn { background: #22c55e; grid-column: span 3; }
-.hangup-btn { background: #ef4444; grid-column: span 3; display: none; }
-.contact-list { max-height: 180px; overflow-y: auto; }
-.contact-item { display: flex; align-items: center; justify-content: space-between; background: #334155; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+body {
+    background-color: #0f172a;
+    color: #f8fafc;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.phone-container {
+    width: 100%;
+    max-width: 380px;
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+.header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+}
+.screen {
+    background: #090d16;
+    color: #38bdf8;
+    padding: 15px;
+    font-size: 22px;
+    text-align: center;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    border: 1px solid #334155;
+}
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.btn {
+    background: #334155;
+    color: white;
+    border: none;
+    padding: 18px;
+    font-size: 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn:active {
+    background: #475569;
+}
+.call-btn {
+    grid-column: span 3;
+    background: #22c55e;
+    font-weight: bold;
+}
+.hangup-btn {
+    grid-column: span 3;
+    background: #ef4444;
+    font-weight: bold;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+.modal-box {
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 15px;
+    width: 85%;
+    max-width: 320px;
+    text-align: center;
+    border: 1px solid #334155;
+}
+.modal-box input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: white;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+.modal-box button {
+    width: 100%;
+    padding: 12px;
+    background: #38bdf8;
+    color: #0f172a;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+}
 

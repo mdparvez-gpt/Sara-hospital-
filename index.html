@@ -3,28 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sara Hospital - Internal Intercom</title>
+    <title>Sara Hospital Intercom</title>
     <link rel="stylesheet" href="style.css">
-    <!-- PeerJS for WebRTC Calling -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-<div class="phone-container">
-    <!-- Hospital Header -->
-    <h2 style="text-align: center; color: #38bdf8; margin-top: 0;">Sara Hospital</h2>
-    <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-top: -10px;">Internal Intercom System</p>
+<!-- Registration Overlay (First Screen) -->
+<div id="reg-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h2>Sara Hospital Intercom</h2>
+        <p>আপনার প্রোফাইল সেটআপ করুন</p>
+        <input type="text" id="reg-name" placeholder="আপনার নাম / ডিপার্টমেন্ট (যেমন: ICU)">
+        <input type="text" id="reg-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 101)">
+        <button onclick="registerUser()">প্রবেশ করুন</button>
+    </div>
+</div>
 
-    <!-- My Profile Setup (Image removed) -->
-    <div class="profile-card" id="profile-area">
-        <h4>আপনার প্রোফাইল সেটআপ</h4>
-        <input type="text" id="my-name" placeholder="নাম বা ডিপার্টমেন্ট (যেমন: Reception)">
-        <input type="text" id="my-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 100)">
-        <button onclick="saveProfile()">সেভ করুন</button>
+<!-- Main App Container -->
+<div class="phone-container" id="app-container" style="display:none;">
+    <div class="header-info">
+        <h3 id="user-info-display" style="margin:0; color:#38bdf8;"></h3>
+        <button onclick="logoutUser()" style="background:#ef4444; width:auto; padding:4px 10px; font-size:12px;">লগআউট</button>
     </div>
 
     <!-- Screen Display -->
-    <div class="screen" id="screen-display">রেডি / নম্বর ডায়াল করুন</div>
+    <div class="screen" id="screen-display">নম্বর ডায়াল করুন</div>
 
     <!-- Keypad -->
     <div class="keypad">
@@ -41,20 +45,20 @@
         <button class="btn" onclick="pressKey('0')">0</button>
         <button class="btn" onclick="pressKey('#')">#</button>
         <button class="btn call-btn" id="call-btn" onclick="makeCall()">কল করুন ☎</button>
-        <button class="btn hangup-btn" id="hangup-btn" onclick="hangUp()">কল কাটুন ✖</button>
+        <button class="btn hangup-btn" id="hangup-btn" onclick="hangUp()" style="display:none;">কল কাটুন ✖</button>
     </div>
+</div>
 
-    <!-- Custom Contact Add Section -->
-    <div class="add-contact-box">
-        <h4>নতুন কন্টাক্ট যোগ করুন (ICU, Pharmacy ইত্যাদি)</h4>
-        <input type="text" id="c-name" placeholder="নাম (যেমন: ICU Desk)">
-        <input type="text" id="c-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 101)">
-        <button onclick="addContact()">তালিকায় যুক্ত করুন</button>
+<!-- Incoming Call Fullscreen UI Modal -->
+<div id="incoming-modal" class="modal-overlay" style="display:none; background: rgba(0,0,0,0.9);">
+    <div class="modal-box" style="text-align:center;">
+        <h2 style="color:#22c55e;">incoming Call... 📞</h2>
+        <p id="caller-info" style="font-size:18px; color:#fff; margin:20px 0;"></p>
+        <div style="display:flex; gap:15px; justify-content:center;">
+            <button onclick="answerCall()" style="background:#22c55e; width:120px;">রিসিভ করুন</button>
+            <button onclick="rejectCall()" style="background:#ef4444; width:120px;">কেটে দিন</button>
+        </div>
     </div>
-
-    <!-- Directory List -->
-    <h4>Sara Hospital ফোনবুক</h4>
-    <div class="contact-list" id="contact-list"></div>
 </div>
 
 <audio id="remote-audio" autoplay></audio>
