@@ -1,9 +1,20 @@
+// Firebase configuration for realtime active users sync
+const firebaseConfig = {
+    databaseURL: "https://sara-hospital-intercom-default-rtdb.firebaseio.com/"
+};
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
 let peer = null;
 let currentCall = null;
 let incomingCallObj = null;
 let dialBuffer = "";
 let myExt = "";
 let myName = "";
+let callTimerInterval = null;
+let callSeconds = 0;
 
 window.onload = function() {
     const savedProfile = localStorage.getItem("sara_hosp_user");
@@ -14,6 +25,7 @@ window.onload = function() {
         document.getElementById("app-container").style.display = "block";
         document.getElementById("user-info-display").innerText = `${myName} (Ext: ${myExt})`;
         initPeer();
+        setupPresence();
     } else {
         document.getElementById("reg-modal").style.display = "flex";
     }
@@ -34,32 +46,61 @@ function registerUser() {
 }
 
 function logoutUser() {
+    if(myExt) {
+        db.ref('active_users/' + myExt).remove();
+    }
     localStorage.removeItem("sara_hosp_user");
     if(peer) peer.destroy();
     location.reload();
 }
 
+function setupPresence() {
+    const userRef = db.ref('active_users/' + myExt);
+    userRef.set({ name: myName, ext: myExt, time: Date.now() });
+    userRef.onDisconnect().remove();
+
+    // Listen to all active users in realtime
+    db.ref('active_users').on('value', (snapshot) => {
+        const users = snapshot.val();
+        const listDiv = document.getElementById("active-users-list");
+        listDiv.innerHTML = "";
+        
+        if(users) {
+            Object.values(users).forEach(u => {
+                if(u.ext !== myExt) {
+                    listDiv.innerHTML += `
+                        <div class="user-chip" onclick="quickCall('${u.ext}')">
+                            🟢 <strong>${u.name}</strong> (${u.ext})
+                        </div>
+                    `;
+                }
+            });
+        }
+    });
+}
+
+function quickCall(ext) {
+    dialBuffer = ext;
+    makeCall();
+}
+
 function initPeer() {
-    // Unique ID based on extension
     peer = new Peer("sara-hosp-" + myExt);
 
     peer.on('open', () => {
-        document.getElementById("screen-display").innerText = "অনলাইন (কল করার জন্য প্রস্তুত)";
+        document.getElementById("screen-display").innerText = "প্রস্তুত (Ready)";
     });
 
     peer.on('call', (call) => {
         incomingCallObj = call;
-        document.getElementById("caller-info").innerText = `এক্সটেনশন থেকে কল আসছে...`;
+        document.getElementById("caller-info").innerText = `ইনকামিং কল আসছে...`;
         document.getElementById("incoming-modal").style.display = "flex";
-        
-        // রিংটোন বা ভাইব্রেশন ট্রিগার করা যেতে পারে
-        if (navigator.vibrate) navigator.vibrate([500, 500, 500]);
+        if (navigator.vibrate) navigator.vibrate([400, 400, 400]);
     });
 
     peer.on('error', (err) => {
-        console.error(err);
         if(err.type === 'unavailable-id') {
-            alert("এই এক্সটেনশন নম্বরটি ইতিমধ্যে অন্য কেউ ব্যবহার করছে! অন্য নম্বর দিন।");
+            alert("এই এক্সটেনশন নম্বরটি ইতিমধ্যে ব্যবহৃত হচ্ছে!");
             logoutUser();
         }
     });
@@ -72,7 +113,7 @@ function pressKey(num) {
 
 function makeCall() {
     if(!dialBuffer) return alert("প্রথমে এক্সটেনশন নম্বর ডায়াল করুন!");
-    if(dialBuffer === myExt) return alert("নিজেকে কল করতে পারবেন না!");
+    if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
 
     const targetId = "sara-hosp-" + dialBuffer;
     document.getElementById("screen-display").innerText = "কলিং " + dialBuffer + "...";
@@ -82,7 +123,7 @@ function makeCall() {
         currentCall = call;
         setupActiveCall(call);
     }).catch(() => {
-        alert("মাইক্রোফোন পারমিশন পাওয়া যায়নি!");
+        alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
         resetUI();
     });
 }
@@ -105,9 +146,10 @@ function rejectCall() {
 }
 
 function setupActiveCall(call) {
-    document.getElementById("call-btn").style.display = "none";
-    document.getElementById("hangup-btn").style.display = "block";
-    document.getElementById("screen-display").innerText = "সংযুক্ত আছেন 📞";
+    document.getElementById("incoming-modal").style.display = "none";
+    document.getElementById("active-call-modal").style.display = "flex";
+    
+    startCallTimer();
 
     call.on('stream', (remoteStream) => {
         document.getElementById("remote-audio").srcObject = remoteStream;
@@ -118,16 +160,28 @@ function setupActiveCall(call) {
     });
 }
 
+function startCallTimer() {
+    callSeconds = 0;
+    document.getElementById("call-timer").innerText = "00:00";
+    callTimerInterval = setInterval(() => {
+        callSeconds++;
+        let mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+        let secs = (callSeconds % 60).toString().padStart(2, '0');
+        document.getElementById("call-timer").innerText = `${mins}:${secs}`;
+    }, 1000);
+}
+
 function hangUp() {
     if(currentCall) currentCall.close();
     resetUI();
 }
 
 function resetUI() {
+    if(callTimerInterval) clearInterval(callTimerInterval);
     dialBuffer = "";
-    document.getElementById("screen-display").innerText = "অনলাইন (কল করার জন্য প্রস্তুত)";
-    document.getElementById("call-btn").style.display = "block";
-    document.getElementById("hangup-btn").style.display = "none";
+    document.getElementById("screen-display").innerText = "প্রস্তুত (Ready)";
+    document.getElementById("incoming-modal").style.display = "none";
+    document.getElementById("active-call-modal").style.display = "none";
     currentCall = null;
     incomingCallObj = null;
 }
