@@ -20,7 +20,6 @@ let audioContext = null;
 let ringtoneInterval = null;
 let isSpeakerOn = false;
 let globalDirectory = {};
-let onlineExtensions = [];
 let unreadMessagesCounts = {};
 let missedCallsList = {};
 let currentChatExt = null;
@@ -59,23 +58,22 @@ async function registerUser() {
         const ext = extInput.value.trim();
 
         if(!name || !ext) {
-            alert("Doya kore name ebong extension number ubhoy-i din!");
+            alert("দয়া করে নাম এবং এক্সটেনশন নম্বর উভয়ই দিন!");
             return;
         }
 
         if(sb) {
             // Check if extension already exists
-            const { data: existing, error: checkError } = await sb
+            const { data: existing } = await sb
                 .from('hospital_directory')
                 .select('*')
                 .eq('ext', ext);
 
             if(existing && existing.length > 0) {
-                alert("Ei extension number-ti already onno karo nam-e registered ache! Onno extension number din.");
+                alert("এই এক্সটেনশন নম্বরটি ইতিমধ্যে রেজিস্টার্ড! অন্য নম্বর দিন।");
                 return;
             }
 
-            // Insert new user into database
             const { error: insertError } = await sb.from('hospital_directory').insert({
                 ext: ext,
                 name: name,
@@ -83,7 +81,7 @@ async function registerUser() {
             });
 
             if(insertError) {
-                alert("Registration korte somossa hoyeche: " + insertError.message);
+                alert("রেজিস্ট্রেশন করতে সমস্যা হয়েছে: " + insertError.message);
                 return;
             }
         }
@@ -92,7 +90,7 @@ async function registerUser() {
         localStorage.setItem("sara_hosp_user", JSON.stringify(user));
         location.reload();
     } catch(e) {
-        alert("Registration korte somossa hoyeche!");
+        alert("রেজিস্ট্রেশন করতে সমস্যা হয়েছে!");
     }
 }
 
@@ -111,11 +109,11 @@ async function setupSupabaseSync() {
     if(!sb) return;
     try {
         await sb.from('hospital_directory').update({ last_seen: new Date().toISOString() }).eq('ext', myExt);
-        await loadDirectoryAndUnread();
+        await loadSectionsData();
 
         sb.channel('sara_hosp_realtime_sync')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'hospital_directory' }, async () => {
-              await loadDirectoryAndUnread();
+              await loadSectionsData();
           })
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
               const newMsg = payload.new;
@@ -125,57 +123,73 @@ async function setupSupabaseSync() {
                   } else {
                       appendChatMessage(newMsg.sender_ext, newMsg.message, false);
                   }
-                  await loadDirectoryAndUnread();
+                  await loadSectionsData();
               }
           })
           .subscribe();
     } catch(e) {}
 }
 
-async function loadDirectoryAndUnread() {
+async function loadSectionsData() {
     if(!sb) return;
     try {
         const { data: dirData } = await sb.from('hospital_directory').select('*');
         globalDirectory = {};
-        onlineExtensions = [];
+        let onlineList = [];
 
         if(dirData) {
             dirData.forEach(u => {
                 globalDirectory[u.ext] = u.name;
-                // Consider active if last_seen is within the last 5 minutes or valid
+                // Check if active (last_seen within 5 minutes or valid timestamp)
                 if(u.last_seen) {
-                    onlineExtensions.push(u.ext);
+                    onlineList.push(u);
                 }
             });
         }
 
-        const listDiv = document.getElementById("active-users-list");
-        if(!listDiv) return;
-        listDiv.innerHTML = "";
+        // Section 1: Phone Book (All Registered Users)
+        const phonebookDiv = document.getElementById("phonebook-list");
+        if(phonebookDiv) {
+            phonebookDiv.innerHTML = "";
+            let countPb = 0;
+            if(dirData && dirData.length > 0) {
+                dirData.forEach(item => {
+                    if(item.ext !== myExt) {
+                        countPb++;
+                        const unread = unreadMessagesCounts[item.ext] ? `<span class="unread-badge">${unreadMessagesCounts[item.ext]}</span>` : "";
+                        const missed = missedCallsList[item.ext] ? `<span class="missed-call-tag">⚠️ মিসড কল</span>` : "";
 
-        if(dirData && dirData.length > 0) {
-            let count = 0;
-            dirData.forEach(item => {
-                if(item.ext !== myExt) {
-                    count++;
-                    const isOnline = onlineExtensions.includes(item.ext);
-                    const statusDot = isOnline ? "🟢" : "⚪";
-                    const unread = unreadMessagesCounts[item.ext] ? `<span class="unread-badge">${unreadMessagesCounts[item.ext]}</span>` : "";
-                    const missed = missedCallsList[item.ext] ? `<span class="missed-call-tag">⚠️ Missed Call</span>` : "";
-
-                    listDiv.innerHTML += `
-                        <div class="user-chip" onclick="openChat('${item.ext}', '${item.name}')">
-                            ${statusDot} <strong>${item.name}</strong> (Ext: ${item.ext}) ${unread} ${missed}
-                        </div>
-                    `;
-                }
-            });
-            if(count === 0) {
-                listDiv.innerHTML = `<span class="no-user">Okkhato ba onno keu nei...</span>`;
+                        phonebookDiv.innerHTML += `
+                            <div class="user-chip" onclick="openChat('${item.ext}', '${item.name}')">
+                                👤 <strong>${item.name}</strong> (Ext: ${item.ext}) ${unread} ${missed}
+                            </div>
+                        `;
+                    }
+                });
             }
-        } else {
-            listDiv.innerHTML = `<span class="no-user">Phonebook khali ache</span>`;
+            if(countPb === 0) phonebookDiv.innerHTML = `<span class="no-user">কোনো ইউজার নেই</span>`;
         }
+
+        // Section 2: Online Users
+        const onlineDiv = document.getElementById("online-users-list");
+        if(onlineDiv) {
+            onlineDiv.innerHTML = "";
+            let countOn = 0;
+            if(onlineList && onlineList.length > 0) {
+                onlineList.forEach(item => {
+                    if(item.ext !== myExt) {
+                        countOn++;
+                        onlineDiv.innerHTML += `
+                            <div class="user-chip" onclick="openChat('${item.ext}', '${item.name}')" style="border-color: #22c55e;">
+                                🟢 <strong>${item.name}</strong> (Ext: ${item.ext})
+                            </div>
+                        `;
+                    }
+                });
+            }
+            if(countOn === 0) onlineDiv.innerHTML = `<span class="no-user">কেউ অনলাইন নেই...</span>`;
+        }
+
     } catch(e) {}
 }
 
@@ -186,7 +200,7 @@ async function openChat(ext, name) {
     document.getElementById("chat-modal").style.display = "flex";
     
     const msgArea = document.getElementById("chat-messages");
-    msgArea.innerHTML = `<div class="chat-msg">Chat load hocche...</div>`;
+    msgArea.innerHTML = `<div class="chat-msg">চ্যাট লোড হচ্ছে...</div>`;
 
     if(sb) {
         const { data } = await sb.from('chat_messages')
@@ -201,10 +215,10 @@ async function openChat(ext, name) {
                 appendChatMessage(m.sender_ext, m.message, isMy);
             });
         } else {
-            msgArea.innerHTML = `<div class="chat-msg">Kothopokothon shuru korun...</div>`;
+            msgArea.innerHTML = `<div class="chat-msg">কথোপকথন শুরু করুন...</div>`;
         }
     }
-    await loadDirectoryAndUnread();
+    await loadSectionsData();
 }
 
 function closeChat() {
@@ -246,7 +260,7 @@ async function handleFileUpload(event) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         const fileData = e.target.result;
-        const fileTag = file.type.startsWith('image/') ? `<img src="${fileData}" style="max-width:150px; border-radius:6px;"><br>${file.name}` : `📎 File: ${file.name}`;
+        const fileTag = file.type.startsWith('image/') ? `<img src="${fileData}" style="max-width:150px; border-radius:6px;"><br>${file.name}` : `📎 ফাইল: ${file.name}`;
         
         appendChatMessage(myExt, fileTag, true);
         await sb.from('chat_messages').insert({
@@ -292,7 +306,7 @@ function initPeer() {
 
         peer.on('error', (err) => {
             if(err && err.type === 'unavailable-id') {
-                alert("Ei extension number-ti already byabohar kora hocche!");
+                alert("এই এক্সটেনশন নম্বরটি ইতিমধ্যে ব্যবহৃত হচ্ছে!");
                 logoutUser();
             }
         });
@@ -314,8 +328,8 @@ function backspaceKey() {
 }
 
 function makeCall() {
-    if(!dialBuffer) return alert("Prothome extension number dial korun!");
-    if(dialBuffer === myExt) return alert("Nijeke call kora jabe na!");
+    if(!dialBuffer) return alert("প্রথমে এক্সটেনশন নম্বর ডায়াল করুন!");
+    if(dialBuffer === myExt) return alert("নিজেকে কল করা যাবে না!");
 
     const targetExt = dialBuffer;
     const targetName = globalDirectory[targetExt] || ("Ext " + targetExt);
@@ -331,7 +345,7 @@ function makeCall() {
         currentCall = call;
         setupActiveCallScreen(call, targetName, targetExt);
     }).catch(() => {
-        alert("Microphone permission proyojon!");
+        alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
         if(screen) screen.innerText = "READY";
     });
 }
@@ -349,7 +363,7 @@ function answerCall() {
         currentCall = incomingCallObj;
         setupActiveCallScreen(currentCall, callerName, callerExt);
     }).catch(() => {
-        alert("Microphone permission proyojon!");
+        alert("মাইক্রোফোন পারমিশন প্রয়োজন!");
     });
 }
 
@@ -360,7 +374,7 @@ function rejectCall() {
     
     const callerExt = incomingCallObj.peer.replace('sara-hosp-', '');
     missedCallsList[callerExt] = true;
-    loadDirectoryAndUnread();
+    loadSectionsData();
 
     if(incomingCallObj) incomingCallObj.close();
     incomingCallObj = null;
@@ -392,7 +406,7 @@ function setupActiveCallScreen(call, name, ext) {
 function toggleSpeaker() {
     isSpeakerOn = !isSpeakerOn;
     const btn = document.getElementById("speaker-btn");
-    if(btn) btn.innerText = isSpeakerOn ? "🔊 Speaker: Chalu" : "🔊 Speaker: Bondho";
+    if(btn) btn.innerText = isSpeakerOn ? "🔊 স্পিকার: চালু" : "🔊 স্পিকার: বন্ধ";
 }
 
 function startCallTimer() {

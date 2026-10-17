@@ -16,8 +16,8 @@
         <div class="brand-title">SARA HOSPITAL</div>
         <div class="brand-sub">INTERNAL IP INTERCOM</div>
         <input type="text" id="reg-name" placeholder="আপনার নাম বা ডিপার্টমেন্ট (যেমন: ICU Desk)">
-        <input type="text" id="reg-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 101)">
-        <button onclick="registerUser()" class="landline-save-btn">প্রবেশ করুন</button>
+        <input type="text" id="reg-ext" placeholder="এক্সটেনশন নম্বর / UID (যেমন: 101)">
+        <button onclick="registerUser()" class="landline-save-btn">রেজিস্ট্রেশন করুন</button>
     </div>
 </div>
 
@@ -26,21 +26,29 @@
     <div class="lcd-screen">
         <div class="lcd-header">
             <span id="user-info-display">Ext: --</span>
-            <span class="live-indicator">● ONLINE</span>
+            <span class="live-indicator">● ACTIVE</span>
         </div>
         <div class="lcd-display-text" id="screen-display">READY</div>
     </div>
 
-    <!-- Phone Book Directory (Permanent + Realtime Active Status) -->
+    {/* Section 1: Phone Book Directory */}
     <div class="directory-panel">
-        <div class="directory-title">ফোনবুক ও ইউজার তালিকা</div>
-        <div id="active-users-list" class="users-scroll">
+        <div class="directory-title">📁 ফোনবুক (সকল রেজিস্টার্ড ইউজার)</div>
+        <div id="phonebook-list" class="users-scroll">
             <span class="no-user">লোড হচ্ছে...</span>
         </div>
     </div>
 
+    {/* Section 2: Online Status */}
+    <div class="directory-panel" style="margin-top: 8px;">
+        <div class="directory-title">🟢 বর্তমানে অনলাইনে আছেন</div>
+        <div id="online-users-list" class="users-scroll">
+            <span class="no-user">কেউ অনলাইন নেই...</span>
+        </div>
+    </div>
+
     <!-- Physical Keypad Layout -->
-    <div class="keypad-panel">
+    <div class="keypad-panel" style="margin-top: 10px;">
         <div class="keypad-grid">
             <button class="k-btn" onclick="pressKey('1')">1</button>
             <button class="k-btn" onclick="pressKey('2')">2</button>

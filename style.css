@@ -15,7 +15,7 @@ body {
     max-width: 390px;
     background: #161e2e;
     border: 3px solid #334155;
-    padding: 18px;
+    padding: 15px;
     border-radius: 24px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.7);
 }
@@ -23,8 +23,8 @@ body {
     background: #040812;
     border: 2px solid #1e293b;
     border-radius: 12px;
-    padding: 12px 15px;
-    margin-bottom: 15px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
     box-shadow: inset 0 3px 6px rgba(0,0,0,0.8);
 }
 .lcd-header {
@@ -32,7 +32,7 @@ body {
     justify-content: space-between;
     font-size: 12px;
     color: #94a3b8;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     font-weight: 600;
 }
 .live-indicator { color: #22c55e; animation: blink 1.5s infinite; }
@@ -40,7 +40,7 @@ body {
 
 .lcd-display-text {
     color: #38bdf8;
-    font-size: 24px;
+    font-size: 22px;
     font-family: monospace;
     font-weight: bold;
     letter-spacing: 2px;
@@ -51,16 +51,15 @@ body {
 .directory-panel {
     background: #0f172a;
     border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 15px;
+    padding: 8px 10px;
     border: 1px solid #1e293b;
 }
 .directory-title {
-    font-size: 11px;
+    font-size: 10px;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     font-weight: bold;
 }
 .users-scroll {
@@ -68,15 +67,15 @@ body {
     gap: 6px;
     overflow-x: auto;
     padding-bottom: 4px;
-    min-height: 32px;
+    min-height: 28px;
     align-items: center;
 }
 .user-chip {
     background: #1e293b;
     color: #cbd5e1;
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 11px;
     white-space: nowrap;
     cursor: pointer;
     border: 1px solid #334155;
@@ -85,54 +84,52 @@ body {
 }
 .user-chip:hover { background: #38bdf8; color: #0b0f19; }
 .unread-badge {
-    background: #ef4444; color: white; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 5px; font-weight: bold;
+    background: #ef4444; color: white; font-size: 9px; padding: 1px 4px; border-radius: 8px; margin-left: 4px; font-weight: bold;
 }
-.missed-call-tag {
-    color: #f87171; font-size: 10px; display: block;
-}
-.no-user { font-size: 12px; color: #64748b; font-style: italic; }
+.missed-call-tag { color: #f87171; font-size: 9px; display: block; }
+.no-user { font-size: 11px; color: #64748b; font-style: italic; }
 
 .keypad-panel {
     background: #111827;
-    padding: 12px;
-    border-radius: 14px;
+    padding: 10px;
+    border-radius: 12px;
     border: 1px solid #1f2937;
 }
 .keypad-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 6px;
+    margin-bottom: 6px;
 }
 .k-btn {
     background: #1f2937;
     color: #f3f4f6;
     border: none;
-    padding: 14px;
-    font-size: 18px;
+    padding: 11px;
+    font-size: 16px;
     font-weight: bold;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 0 #111827;
+    box-shadow: 0 3px 0 #111827;
     transition: 0.1s;
 }
-.k-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #111827; }
-.action-row { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
-.backspace-btn { background: #7f1d1d !important; box-shadow: 0 4px 0 #450a0a !important; font-size: 14px !important; }
-.call-action-btn { background: #16a34a !important; box-shadow: 0 4px 0 #14532d !important; font-size: 16px !important; }
-.phone-footer { text-align: center; margin-top: 12px; }
-.logout-link { background: none; border: none; color: #f87171; font-size: 12px; cursor: pointer; text-decoration: underline; }
+.k-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #111827; }
+.action-row { display: grid; grid-template-columns: 1fr 2fr; gap: 6px; }
+.backspace-btn { background: #7f1d1d !important; box-shadow: 0 3px 0 #450a0a !important; font-size: 13px !important; }
+.call-action-btn { background: #16a34a !important; box-shadow: 0 3px 0 #14532d !important; font-size: 14px !important; }
+.phone-footer { text-align: center; margin-top: 8px; }
+.logout-link { background: none; border: none; color: #f87171; font-size: 11px; cursor: pointer; text-decoration: underline; }
 
 /* Messenger Style Chat Window */
-.chat-card { width: 90%; max-width: 350px; height: 420px; display: flex; flex-direction: column; padding: 12px !important; }
-.chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; font-size: 15px; color: #38bdf8; }
-.close-chat-btn { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; }
-.chat-messages-area { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; text-align: left; }
+.chat-card { width: 90%; max-width: 350px; height: 400px; display: flex; flex-direction: column; padding: 12px !important; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px; font-size: 14px; color: #38bdf8; }
+.close-chat-btn { background: none; border: none; color: #ef4444; font-size: 15px; cursor: pointer; }
+.chat-messages-area { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; text-align: left; }
 .chat-msg { background: #334155; padding: 6px 10px; border-radius: 8px; max-width: 80%; word-break: break-all; }
 .chat-msg.my { background: #0369a1; align-self: flex-end; }
 .chat-input-area { display: flex; gap: 6px; align-items: center; border-top: 1px solid #334155; padding-top: 8px; }
-.chat-input-area input[type="text"] { flex: 1; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; font-size: 12px; }
-.attachment-btn, .send-msg-btn, .chat-call-btn { background: #334155; border: none; color: white; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.chat-input-area input[type="text"] { flex: 1; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; font-size: 11px; }
+.attachment-btn, .send-msg-btn, .chat-call-btn { background: #334155; border: none; color: white; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 .send-msg-btn { background: #0284c7; }
 .chat-call-btn { background: #16a34a; }
 
@@ -142,23 +139,23 @@ body {
     display: flex; justify-content: center; align-items: center; z-index: 999;
 }
 .incoming-card {
-    background: #1e293b; padding: 25px; border-radius: 20px; width: 85%; max-width: 320px;
+    background: #1e293b; padding: 20px; border-radius: 18px; width: 85%; max-width: 300px;
     text-align: center; border: 2px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
 }
-.ringing-pulse { font-size: 45px; animation: bounce 0.8s infinite alternate; }
-@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-.caller-name-display { font-size: 18px; color: #38bdf8; margin: 15px 0 20px 0; font-weight: bold; }
-.incoming-buttons { display: flex; gap: 10px; }
-.ans-call-btn { background: #22c55e; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; flex: 1; cursor: pointer; }
-.rej-call-btn { background: #ef4444; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; flex: 1; cursor: pointer; }
-.running-icon { font-size: 45px; background: rgba(56,189,248,0.1); width: 75px; height: 75px; line-height: 75px; border-radius: 50%; margin: 0 auto; border: 2px solid #38bdf8; }
-.target-talking { font-size: 16px; color: #cbd5e1; margin: 10px 0 5px 0; }
-.timer-text { font-size: 22px; color: #38bdf8; font-weight: bold; margin-bottom: 20px; font-family: monospace; }
-.running-controls { display: flex; flex-direction: column; gap: 10px; }
-.ctrl-btn { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.end-call-btn { background: #ef4444; color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; }
-.modal-box input { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; box-sizing: border-box; }
-.landline-save-btn { width: 100%; padding: 12px; background: #38bdf8; color: #0b0f19; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-.brand-title { font-size: 18px; font-weight: bold; color: #38bdf8; letter-spacing: 2px; }
-.brand-sub { font-size: 10px; color: #64748b; letter-spacing: 1px; margin-bottom: 15px; }
+.ringing-pulse { font-size: 40px; animation: bounce 0.8s infinite alternate; }
+@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+.caller-name-display { font-size: 16px; color: #38bdf8; margin: 12px 0 16px 0; font-weight: bold; }
+.incoming-buttons { display: flex; gap: 8px; }
+.ans-call-btn { background: #22c55e; color: white; border: none; padding: 10px; font-weight: bold; border-radius: 6px; flex: 1; cursor: pointer; }
+.rej-call-btn { background: #ef4444; color: white; border: none; padding: 10px; font-weight: bold; border-radius: 6px; flex: 1; cursor: pointer; }
+.running-icon { font-size: 40px; background: rgba(56,189,248,0.1); width: 65px; height: 65px; line-height: 65px; border-radius: 50%; margin: 0 auto; border: 2px solid #38bdf8; }
+.target-talking { font-size: 14px; color: #cbd5e1; margin: 8px 0 4px 0; }
+.timer-text { font-size: 20px; color: #38bdf8; font-weight: bold; margin-bottom: 15px; font-family: monospace; }
+.running-controls { display: flex; flex-direction: column; gap: 8px; }
+.ctrl-btn { background: #334155; color: white; border: none; padding: 9px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.end-call-btn { background: #ef4444; color: white; border: none; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; }
+.modal-box input { width: 100%; padding: 11px; margin: 6px 0; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 6px; box-sizing: border-box; }
+.landline-save-btn { width: 100%; padding: 11px; background: #38bdf8; color: #0b0f19; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+.brand-title { font-size: 16px; font-weight: bold; color: #38bdf8; letter-spacing: 2px; }
+.brand-sub { font-size: 9px; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; }
 
