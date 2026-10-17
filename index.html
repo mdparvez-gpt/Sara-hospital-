@@ -10,20 +10,19 @@
 </head>
 <body>
 
-<!-- Registration Modal -->
-<div id="reg-modal" class="modal-overlay" style="display:none;">
-    <div class="modal-box">
+<!-- Registration Overlay -->
+<div id="reg-modal" class="modal-overlay">
+    <div class="landline-base modal-box">
         <div class="brand-title">SARA HOSPITAL</div>
         <div class="brand-sub">INTERNAL IP INTERCOM</div>
-        <input type="text" id="reg-name" placeholder="আপনার নাম বা ডিপার্টমেন্ট (যেমন: ICU)">
+        <input type="text" id="reg-name" placeholder="আপনার নাম বা ডিপার্টমেন্ট (যেমন: ICU Desk)">
         <input type="text" id="reg-ext" placeholder="এক্সটেনশন নম্বর (যেমন: 101)">
-        <button onclick="registerUser()" class="landline-save-btn">রেজিস্ট্রেশন করুন</button>
+        <button onclick="registerUser()" class="landline-save-btn">প্রবেশ করুন</button>
     </div>
 </div>
 
-<!-- Landline Phone Main App Container -->
+<!-- Landline Phone Main Layout -->
 <div class="landline-phone" id="app-container" style="display:none;">
-    <!-- LCD Display -->
     <div class="lcd-screen">
         <div class="lcd-header">
             <span id="user-info-display">Ext: --</span>
@@ -32,15 +31,13 @@
         <div class="lcd-display-text" id="screen-display">READY</div>
     </div>
 
-    <!-- Active Registered Users Directory -->
     <div class="directory-panel">
-        <div class="directory-title">রেজিস্টার্ড ইউজার তালিকা (লাইভ)</div>
-        <div id="directory-users-list" class="users-scroll">
+        <div class="directory-title">অনলাইন এক্সটেনশনসমূহ</div>
+        <div id="active-users-list" class="users-scroll">
             <span class="no-user">লোড হচ্ছে...</span>
         </div>
     </div>
 
-    <!-- Physical Keypad -->
     <div class="keypad-panel">
         <div class="keypad-grid">
             <button class="k-btn" onclick="pressKey('1')">1</button>
@@ -63,11 +60,11 @@
     </div>
 
     <div class="phone-footer">
-        <button onclick="logoutUser()" class="logout-link">লগআউট / অ্যাকাউন্ট পরিবর্তন</button>
+        <button onclick="logoutUser()" class="logout-link">লগআউট / পরিবর্তন</button>
     </div>
 </div>
 
-<!-- Incoming Call Fullscreen Modal -->
+<!-- Incoming Call Screen -->
 <div id="incoming-modal" class="incoming-screen" style="display:none;">
     <div class="incoming-card">
         <div class="ringing-pulse">📞</div>
@@ -80,7 +77,7 @@
     </div>
 </div>
 
-<!-- Active Running Call Screen Modal -->
+<!-- Running Call Screen -->
 <div id="active-call-modal" class="incoming-screen" style="display:none;">
     <div class="incoming-card">
         <div class="running-icon">🎙️</div>
